@@ -1,22 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Email Templates - Pool Comms Console{% endblock %}
+{% block title %}Email Templates & Quick Actions - Pool Comms Console{% endblock %}
 
 {% block content %}
 <div class="row mt-4">
     <div class="col-md-12">
         <div class="d-flex justify-content-between align-items-center">
-            <h1>Email Templates</h1>
+            <h1><i class="bi bi-envelope-paper"></i> Email Templates & Quick Actions</h1>
             <a href="/templates/new" class="btn btn-success">
-                <i class="bi bi-plus-circle"></i> Add Template
+                <i class="bi bi-plus-circle"></i> Create New Template
             </a>
         </div>
     </div>
 </div>
 
 <div class="row mt-3">
-    <div class="col-md-12">
+    <div class="col-md-8">
         <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> All Templates</h5>
+            </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover">
@@ -24,35 +27,47 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Type</th>
-                                <th>Subject</th>
-                                <th>Active</th>
-                                <th>Created</th>
+                                <th>Subject Preview</th>
+                                <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for template in templates %}
-                            <tr>
-                                <td>{{ template.name }}</td>
+                            <tr class="{% if not template.active %}table-secondary{% endif %}">
                                 <td>
-                                    <span class="badge bg-primary">{{ template.template_type }}</span>
-                                </td>
-                                <td>{{ template.subject_template[:50] }}...</td>
-                                <td>
+                                    <strong>{{ template.name }}</strong>
                                     {% if template.active %}
-                                        <span class="badge bg-success">Active</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Inactive</span>
+                                    <span class="badge bg-success ms-2">Quick Action</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ template.created_at|format_datetime }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if template.template_type == 'roster_request' %}bg-primary
+                                        {% elif template.template_type == 'follow_up' %}bg-warning
+                                        {% elif template.template_type == 'progress_update' %}bg-info
+                                        {% elif template.template_type == 'quarterly_selections' %}bg-secondary
+                                        {% elif template.template_type == 'testing_report' %}bg-success
+                                        {% else %}bg-dark
+                                        {% endif %}">
+                                        {{ template.template_type }}
+                                    </span>
+                                </td>
+                                <td><small>{{ template.subject_template[:40] }}...</small></td>
+                                <td>
+                                    {% if template.active %}
+                                        <i class="bi bi-check-circle-fill text-success"></i> Active
+                                    {% else %}
+                                        <i class="bi bi-x-circle text-muted"></i> Inactive
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <a href="/templates/{{ template.id }}/edit" class="btn btn-sm btn-warning">
-                                        <i class="bi bi-pencil"></i> Edit
+                                        <i class="bi bi-pencil"></i>
                                     </a>
                                     <form method="post" action="/templates/{{ template.id }}/delete" style="display:inline;">
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this template? This cannot be undone.')">
-                                            <i class="bi bi-trash"></i> Delete
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this template and remove its quick action? This cannot be undone.')">
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
                                 </td>
@@ -64,20 +79,59 @@
             </div>
         </div>
     </div>
-</div>
-
-<div class="row mt-3">
-    <div class="col-md-12">
-        <div class="alert alert-info">
-            <h5>Available Placeholders:</h5>
-            <p class="mb-0">
-                <code>{{"{{"}}client_name{{"}}"}}</code>,
-                <code>{{"{{"}}contact_name{{"}}"}}</code>,
-                <code>{{"{{"}}quarter{{"}}"}}</code>,
-                <code>{{"{{"}}due_date{{"}}"}}</code>,
-                <code>{{"{{"}}days_overdue{{"}}"}}</code>,
-                <code>{{"{{"}}update_date{{"}}"}}</code>
-            </p>
+    
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> How It Works</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Active templates</strong> automatically appear as quick action buttons on each client's detail page.</p>
+                <p class="mb-0"><small class="text-muted">When you create or activate a template, it becomes instantly available as a one-click email button for all clients.</small></p>
+            </div>
+        </div>
+        
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="bi bi-code-square"></i> Template Types & Attachments</h6>
+            </div>
+            <div class="card-body">
+                <p><small><strong>Template Type</strong> determines which attachments are automatically included:</small></p>
+                <ul class="small mb-0">
+                    <li><code>roster_request</code> - Roster Request attachments</li>
+                    <li><code>follow_up</code> - Reminder attachments</li>
+                    <li><code>progress_update</code> - Update attachments</li>
+                    <li><code>quarterly_selections</code> - Selection attachments</li>
+                    <li><code>testing_report</code> - Report attachments</li>
+                    <li><code>custom</code> - No automatic attachments</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-braces"></i> Available Placeholders</h6>
+            </div>
+            <div class="card-body">
+                <p class="small mb-2"><strong>General:</strong></p>
+                <p class="small">
+                    <code>{{"{{"}}client_name{{"}}"}}</code>,
+                    <code>{{"{{"}}contact_name{{"}}"}}</code>,
+                    <code>{{"{{"}}quarter{{"}}"}}</code>,
+                    <code>{{"{{"}}due_date{{"}}"}}</code>,
+                    <code>{{"{{"}}days_overdue{{"}}"}}</code>,
+                    <code>{{"{{"}}update_date{{"}}"}}</code>,
+                    <code>{{"{{"}}send_date{{"}}"}}</code>
+                </p>
+                <p class="small mb-2"><strong>Roster Stats:</strong></p>
+                <p class="small mb-0">
+                    <code>{{"{{"}}roster_quarter{{"}}"}}</code>,
+                    <code>{{"{{"}}total_employees{{"}}"}}</code>,
+                    <code>{{"{{"}}tested_count{{"}}"}}</code>,
+                    <code>{{"{{"}}not_tested_count{{"}}"}}</code>,
+                    <code>{{"{{"}}excused_count{{"}}"}}</code>
+                </p>
+            </div>
         </div>
     </div>
 </div>
