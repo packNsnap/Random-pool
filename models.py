@@ -64,7 +64,7 @@ class RosterEntry(Base):
     employee_id = Column(String, nullable=True)
     position = Column(String, nullable=True)
     department = Column(String, nullable=True)
-    has_tested = Column(Boolean, default=False)
+    testing_status = Column(String, default="not_tested", nullable=False)
     test_date = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
