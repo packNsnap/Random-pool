@@ -198,6 +198,49 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">CC Email Recipients</h5>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addCCEmailModal">
+                    <i class="bi bi-plus-circle"></i> Add CC Email
+                </button>
+            </div>
+            <div class="card-body">
+                {% if client.cc_emails %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cc_email in client.cc_emails %}
+                            <tr>
+                                <td>{{ cc_email.name or '-' }}</td>
+                                <td>{{ cc_email.email }}</td>
+                                <td>
+                                    <form method="post" action="/cc_emails/{{ cc_email.id }}/delete" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove this CC email recipient?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No CC recipients. All automated emails will only be sent to the primary contact email address.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Roster Management</h5>
                 <div>
                     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadRosterCSVModal">
@@ -384,6 +427,36 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Upload & Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addCCEmailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/clients/{{ client.id }}/cc_emails">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add CC Email Recipient</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Note:</strong> CC recipients will automatically receive copies of all automated emails sent to this client.
+                    </div>
+                    <div class="mb-3">
+                        <label for="cc_email" class="form-label">Email Address *</label>
+                        <input type="email" class="form-control" id="cc_email" name="email" required placeholder="colleague@company.com">
+                    </div>
+                    <div class="mb-3">
+                        <label for="cc_name" class="form-label">Name (Optional)</label>
+                        <input type="text" class="form-control" id="cc_name" name="name" placeholder="e.g., John Smith">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add CC Recipient</button>
                 </div>
             </form>
         </div>
