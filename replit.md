@@ -14,8 +14,8 @@ A Python-based client communication management system for automating quarterly r
 - User authentication system
 - Client and contact management
 - **CSV Roster Management** - Upload roster CSV files to import employee data
-- **Testing Status Tracking** - Mark employees as tested/not tested with test dates
-- **Roster Entry Management** - View and manage individual roster entries per client
+- **Three-State Testing Status** - Track employees as tested/not tested/excused with dates
+- **Roster Entry Management** - View and manage individual roster entries per client with status cycling
 - **Client-specific attachment management** - Upload passports, certifications, and other documents (max 3MB per file)
 - **Attachment categorization** - Separate attachments for roster requests, reminders, and updates
 - Automated attachment inclusion in category-specific emails
@@ -71,12 +71,20 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{total_employees}}` - Total number of employees
 - `{{tested_count}}` - Number who have tested
 - `{{not_tested_count}}` - Number who haven't tested
+- `{{excused_count}}` - Number who are excused from testing
 - `{{tested_percentage}}` - Percentage tested
 - `{{tested_list}}` - List of employees who have tested
 - `{{not_tested_list}}` - List of employees who haven't tested
+- `{{excused_list}}` - List of employees who are excused
 - `{{report_date}}` - Report generation date
 
 ## Recent Changes
+- 2025-11-16: Three-state testing status implementation
+  - **Excused Status Added**: Employees can now be marked as tested/not tested/excused
+  - **Status Cycling**: Click to cycle through all three statuses (not tested → tested → excused → repeat)
+  - **Enhanced Reports**: Weekly testing reports now include excused employees in a separate section
+  - **Database Migration**: Migrated from boolean has_tested to string testing_status field
+  - **Updated Placeholders**: Added {{excused_count}} and {{excused_list}} to email templates
 - 2025-11-16: Major feature additions
   - **CSV Roster Import**: Upload CSV files to import employee rosters with automatic parsing
   - **Testing Status Tracking**: Mark individual employees as tested/not tested with dates
