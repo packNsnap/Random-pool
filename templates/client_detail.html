@@ -74,9 +74,21 @@
                 <h5 class="mb-0">Quick Actions</h5>
             </div>
             <div class="card-body">
-                <form method="post" action="/clients/{{ client.id }}/send_roster_request" class="mb-3">
+                <form method="post" action="/clients/{{ client.id }}/send_roster_request" class="mb-2">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-envelope-send"></i> Send Roster Request
+                    </button>
+                </form>
+                
+                <form method="post" action="/clients/{{ client.id }}/send_reminder" class="mb-2">
+                    <button type="submit" class="btn btn-warning w-100">
+                        <i class="bi bi-bell"></i> Send Email Reminder
+                    </button>
+                </form>
+                
+                <form method="post" action="/clients/{{ client.id }}/send_update" class="mb-3">
+                    <button type="submit" class="btn btn-info w-100">
+                        <i class="bi bi-arrow-repeat"></i> Send Roster Update
                     </button>
                 </form>
                 
@@ -125,6 +137,7 @@
                     <table class="table table-sm">
                         <thead>
                             <tr>
+                                <th>Type</th>
                                 <th>Filename</th>
                                 <th>Description</th>
                                 <th>Size</th>
@@ -135,6 +148,17 @@
                         <tbody>
                             {% for attachment in client.attachments %}
                             <tr>
+                                <td>
+                                    {% if attachment.category == 'roster_request' %}
+                                        <span class="badge bg-primary">Roster Request</span>
+                                    {% elif attachment.category == 'reminder' %}
+                                        <span class="badge bg-warning">Reminder</span>
+                                    {% elif attachment.category == 'update' %}
+                                        <span class="badge bg-info">Update</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ attachment.category }}</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ attachment.original_filename }}</td>
                                 <td>{{ attachment.description or '-' }}</td>
                                 <td>{{ (attachment.file_size / 1024 / 1024)|round(2) }} MB</td>
@@ -155,7 +179,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted mb-0">No attachments yet. These files will be automatically attached to quarterly roster requests.</p>
+                <p class="text-muted mb-0">No attachments yet. Upload files for different email types using the button above.</p>
                 {% endif %}
             </div>
         </div>
@@ -288,9 +312,18 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
+                        <label for="category" class="form-label">Email Type</label>
+                        <select class="form-control" id="category" name="category" required>
+                            <option value="roster_request">Roster Request</option>
+                            <option value="reminder">Email Reminder</option>
+                            <option value="update">Roster Update</option>
+                        </select>
+                        <small class="text-muted">Select which type of email this attachment will be sent with.</small>
+                    </div>
+                    <div class="mb-3">
                         <label for="attachment_file" class="form-label">File (Max 3MB)</label>
                         <input type="file" class="form-control" id="attachment_file" name="file" required>
-                        <small class="text-muted">Upload passports, certifications, or other documents to include in quarterly mailings.</small>
+                        <small class="text-muted">Upload passports, certifications, or other documents.</small>
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">Description (Optional)</label>

@@ -230,7 +230,8 @@ async def send_roster_request(
         "due_date": datetime.utcnow().strftime("%B %d, %Y")
     }
     
-    attachment_paths = [os.path.join("uploads", "attachments", att.filename) for att in client.attachments]
+    attachment_paths = [os.path.join("uploads", "attachments", att.filename) 
+                        for att in client.attachments if att.category == "roster_request"]
     
     email_service = EmailService(db)
     success, message = email_service.send_from_template(client, template, variables, attachments=attachment_paths)
@@ -238,6 +239,83 @@ async def send_roster_request(
     if success:
         client.last_roster_request_at = datetime.utcnow()
         client.status = "Roster Request Sent"
+        db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
+@app.post("/clients/{client_id}/send_reminder")
+async def send_reminder(
+    client_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    template = db.query(EmailTemplate).filter(
+        EmailTemplate.template_type == "follow_up",
+        EmailTemplate.active == True
+    ).first()
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="No reminder template found")
+    
+    current_quarter = get_current_quarter()
+    days_overdue = days_since(client.last_roster_request_at) if client.last_roster_request_at else 0
+    
+    variables = {
+        "client_name": client.name,
+        "contact_name": client.contact_name,
+        "quarter": current_quarter,
+        "days_overdue": days_overdue
+    }
+    
+    attachment_paths = [os.path.join("uploads", "attachments", att.filename) 
+                        for att in client.attachments if att.category == "reminder"]
+    
+    email_service = EmailService(db)
+    success, message = email_service.send_from_template(client, template, variables, attachments=attachment_paths)
+    
+    if success:
+        client.status = "Reminder Sent"
+        db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
+@app.post("/clients/{client_id}/send_update")
+async def send_update(
+    client_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    template = db.query(EmailTemplate).filter(
+        EmailTemplate.template_type == "progress_update",
+        EmailTemplate.active == True
+    ).first()
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="No update template found")
+    
+    variables = {
+        "client_name": client.name,
+        "contact_name": client.contact_name,
+        "update_date": datetime.utcnow().strftime("%B %d, %Y")
+    }
+    
+    attachment_paths = [os.path.join("uploads", "attachments", att.filename) 
+                        for att in client.attachments if att.category == "update"]
+    
+    email_service = EmailService(db)
+    success, message = email_service.send_from_template(client, template, variables, attachments=attachment_paths)
+    
+    if success:
+        client.last_progress_update_at = datetime.utcnow()
+        client.status = "Update Sent"
         db.commit()
     
     return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
@@ -279,6 +357,7 @@ async def mark_roster_received(
 async def upload_attachment(
     client_id: int,
     file: UploadFile = File(...),
+    category: str = Form("roster_request"),
     description: Optional[str] = Form(None),
     user: User = Depends(require_login),
     db: Session = Depends(get_db)
@@ -312,6 +391,7 @@ async def upload_attachment(
         filename=stored_filename,
         original_filename=original_filename,
         file_size=file_size,
+        category=category,
         description=description
     )
     db.add(attachment)

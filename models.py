@@ -93,6 +93,7 @@ class Attachment(Base):
     filename = Column(String, nullable=False)
     original_filename = Column(String, nullable=False)
     file_size = Column(Integer, nullable=False)
+    category = Column(String, default="roster_request", nullable=False)
     description = Column(String, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     
