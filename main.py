@@ -119,6 +119,10 @@ async def create_client(
     contact_email: str = Form(...),
     program_type: str = Form("DOT"),
     progress_frequency_days: int = Form(14),
+    reminder_enabled: bool = Form(True),
+    reminder_frequency_days: int = Form(7),
+    testing_report_enabled: bool = Form(True),
+    testing_report_day_of_week: int = Form(1),
     active: bool = Form(True),
     notes: Optional[str] = Form(None),
     user: User = Depends(require_login),
@@ -130,6 +134,10 @@ async def create_client(
         contact_email=contact_email,
         program_type=program_type,
         progress_frequency_days=progress_frequency_days,
+        reminder_enabled=reminder_enabled,
+        reminder_frequency_days=reminder_frequency_days,
+        testing_report_enabled=testing_report_enabled,
+        testing_report_day_of_week=testing_report_day_of_week,
         active=active,
         notes=notes
     )
@@ -186,6 +194,10 @@ async def update_client(
     contact_email: str = Form(...),
     program_type: str = Form("DOT"),
     progress_frequency_days: int = Form(14),
+    reminder_enabled: bool = Form(True),
+    reminder_frequency_days: int = Form(7),
+    testing_report_enabled: bool = Form(True),
+    testing_report_day_of_week: int = Form(1),
     active: bool = Form(True),
     notes: Optional[str] = Form(None),
     user: User = Depends(require_login),
@@ -200,6 +212,10 @@ async def update_client(
     client.contact_email = contact_email
     client.program_type = program_type
     client.progress_frequency_days = progress_frequency_days
+    client.reminder_enabled = reminder_enabled
+    client.reminder_frequency_days = reminder_frequency_days
+    client.testing_report_enabled = testing_report_enabled
+    client.testing_report_day_of_week = testing_report_day_of_week
     client.active = active
     client.notes = notes
     db.commit()

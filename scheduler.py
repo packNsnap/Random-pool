@@ -2,7 +2,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, date, timedelta
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import Client, EmailTemplate
+from models import Client, EmailTemplate, Roster, RosterEntry
 from email_service import EmailService
 from utils import get_current_quarter, get_quarter_dates, days_since
 import logging
@@ -33,7 +33,10 @@ def check_and_send_roster_reminders():
         days_until_quarter_end = (quarter_end - today).days
         remind_window_days = 14
         
-        active_clients = db.query(Client).filter(Client.active == True).all()
+        active_clients = db.query(Client).filter(
+            Client.active == True,
+            Client.reminder_enabled == True
+        ).all()
         
         for client in active_clients:
             if client.roster_frequency != "quarterly":
@@ -192,6 +195,79 @@ def check_and_send_progress_updates():
     finally:
         db.close()
 
+def send_weekly_testing_reports():
+    db = SessionLocal()
+    try:
+        logger.info("Running weekly testing report...")
+        email_service = EmailService(db)
+        
+        active_clients = db.query(Client).filter(
+            Client.active == True,
+            Client.testing_report_enabled == True
+        ).all()
+        
+        for client in active_clients:
+            latest_roster = db.query(Roster).filter(
+                Roster.client_id == client.id
+            ).order_by(Roster.received_at.desc()).first()
+            
+            if not latest_roster:
+                continue
+            
+            entries = db.query(RosterEntry).filter(
+                RosterEntry.roster_id == latest_roster.id
+            ).all()
+            
+            if not entries:
+                continue
+            
+            tested_employees = [e for e in entries if e.has_tested]
+            not_tested_employees = [e for e in entries if not e.has_tested]
+            
+            total = len(entries)
+            tested_count = len(tested_employees)
+            not_tested_count = len(not_tested_employees)
+            tested_percentage = round((tested_count / total * 100), 1) if total > 0 else 0
+            
+            tested_list = "\n".join([f"  - {e.employee_name} ({e.position or 'N/A'}) - Tested on {e.test_date.strftime('%Y-%m-%d') if e.test_date else 'Unknown'}" 
+                                      for e in tested_employees]) or "  None"
+            not_tested_list = "\n".join([f"  - {e.employee_name} ({e.position or 'N/A'})" 
+                                          for e in not_tested_employees]) or "  None"
+            
+            template = get_roster_template_by_type(db, "testing_report")
+            if not template:
+                logger.warning("No testing_report template found, skipping")
+                continue
+            
+            variables = {
+                "client_name": client.name,
+                "contact_name": client.contact_name,
+                "roster_quarter": latest_roster.quarter,
+                "total_employees": total,
+                "tested_count": tested_count,
+                "not_tested_count": not_tested_count,
+                "tested_percentage": tested_percentage,
+                "tested_list": tested_list,
+                "not_tested_list": not_tested_list,
+                "report_date": datetime.utcnow().strftime("%B %d, %Y")
+            }
+            
+            success, message = email_service.send_from_template(
+                client=client,
+                template=template,
+                variables=variables
+            )
+            
+            if success:
+                logger.info(f"Sent weekly testing report to {client.name}")
+            else:
+                logger.error(f"Failed to send testing report to {client.name}: {message}")
+    
+    except Exception as e:
+        logger.error(f"Error in weekly testing report: {str(e)}")
+    finally:
+        db.close()
+
 def start_scheduler():
     scheduler = BackgroundScheduler()
     
@@ -217,6 +293,15 @@ def start_scheduler():
         hour=11,
         minute=0,
         id="progress_updates"
+    )
+    
+    scheduler.add_job(
+        func=send_weekly_testing_reports,
+        trigger="cron",
+        day_of_week="mon",
+        hour=8,
+        minute=0,
+        id="weekly_testing_reports"
     )
     
     scheduler.start()

@@ -53,6 +53,60 @@
                         </div>
                     </div>
                     
+                    <hr>
+                    <h5>Reminder Settings</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="reminder_enabled" name="reminder_enabled" value="true"
+                                           {% if not client or client.reminder_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="reminder_enabled">
+                                        Enable Automated Reminders
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="reminder_frequency_days" class="form-label">Reminder Frequency (Days)</label>
+                                <input type="number" class="form-control" id="reminder_frequency_days" name="reminder_frequency_days" 
+                                       value="{{ client.reminder_frequency_days if client else 7 }}" min="1">
+                                <small class="text-muted">Days between reminder emails</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="testing_report_enabled" name="testing_report_enabled" value="true"
+                                           {% if not client or client.testing_report_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="testing_report_enabled">
+                                        Enable Weekly Testing Reports
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="testing_report_day_of_week" class="form-label">Testing Report Day</label>
+                                <select class="form-select" id="testing_report_day_of_week" name="testing_report_day_of_week">
+                                    <option value="1" {% if client and client.testing_report_day_of_week == 1 %}selected{% endif %}>Monday</option>
+                                    <option value="2" {% if client and client.testing_report_day_of_week == 2 %}selected{% endif %}>Tuesday</option>
+                                    <option value="3" {% if client and client.testing_report_day_of_week == 3 %}selected{% endif %}>Wednesday</option>
+                                    <option value="4" {% if client and client.testing_report_day_of_week == 4 %}selected{% endif %}>Thursday</option>
+                                    <option value="5" {% if client and client.testing_report_day_of_week == 5 %}selected{% endif %}>Friday</option>
+                                </select>
+                                <small class="text-muted">Day of the week to send testing reports</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
                     <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="active" name="active" value="true"
