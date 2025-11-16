@@ -24,6 +24,7 @@ A Python-based client communication management system for automating quarterly r
 - **Quarterly Selections Quick Action** - Send random pool quarterly selection emails with multiple attachments
 - **CC Email Support** - Add multiple CC email recipients per client for automatic inclusion in all automated emails
 - **Weekly Testing Reports** - Automated email reports showing tested vs not tested employees
+- **Progress Updates with CSV Export** - Biweekly progress emails include roster statistics and auto-generated CSV attachments with complete testing status
 - **Dynamic Email Templates** - Create, edit, and delete custom email templates
 - **Dynamic Quick Actions** - Active templates automatically appear as quick action buttons on client pages
 - Email template management with placeholders and attachment integration
@@ -72,19 +73,25 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{days_overdue}}` - Days since last request
 - `{{update_date}}` - Current date
 
-### Testing Report Templates
+### Roster Statistics Templates (Testing Reports & Progress Updates)
 - `{{roster_quarter}}` - Roster quarter
 - `{{total_employees}}` - Total number of employees
 - `{{tested_count}}` - Number who have tested
 - `{{not_tested_count}}` - Number who haven't tested
 - `{{excused_count}}` - Number who are excused from testing
-- `{{tested_percentage}}` - Percentage tested
-- `{{tested_list}}` - List of employees who have tested
-- `{{not_tested_list}}` - List of employees who haven't tested
-- `{{excused_list}}` - List of employees who are excused
+- `{{tested_percentage}}` - Percentage tested (auto-calculated)
+- `{{tested_list}}` - Formatted list of employees who have tested
+- `{{not_tested_list}}` - Formatted list of employees who haven't tested
+- `{{excused_list}}` - Formatted list of employees who are excused
 - `{{report_date}}` - Report generation date
 
 ## Recent Changes
+- 2025-11-16: Enhanced Progress Update Emails
+  - **Real Roster Data**: Progress update emails now include actual testing statistics (total employees, tested count, not tested count, excused count, percentage tested)
+  - **Employee Lists**: Detailed lists of employees in each testing status category included in email body
+  - **CSV Export**: Automatic CSV attachment generation with complete roster data (employee name, ID, position, department, testing status, test date)
+  - **Template Variables**: Added {{tested_percentage}}, {{tested_list}}, {{not_tested_list}}, {{excused_list}} placeholders
+  - **Updated Default Template**: Progress update template now shows comprehensive roster statistics
 - 2025-11-16: Dynamic Template & Quick Action System
   - **Template CRUD**: Create, edit, and delete email templates with full management interface
   - **Dynamic Quick Actions**: Active templates automatically generate quick action buttons on client detail pages
