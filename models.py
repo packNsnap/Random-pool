@@ -40,6 +40,7 @@ class Client(Base):
     rosters = relationship("Roster", back_populates="client", cascade="all, delete-orphan")
     email_logs = relationship("EmailLog", back_populates="client", cascade="all, delete-orphan")
     attachments = relationship("Attachment", back_populates="client", cascade="all, delete-orphan")
+    cc_emails = relationship("CCEmail", back_populates="client", cascade="all, delete-orphan")
 
 class Roster(Base):
     __tablename__ = "rosters"
@@ -123,3 +124,14 @@ class Attachment(Base):
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     
     client = relationship("Client", back_populates="attachments")
+
+class CCEmail(Base):
+    __tablename__ = "cc_emails"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
+    email = Column(String, nullable=False)
+    name = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    client = relationship("Client", back_populates="cc_emails")
