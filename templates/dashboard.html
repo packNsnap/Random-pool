@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Pool Comms Console{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h1>Dashboard</h1>
+        <p class="text-muted">Current Quarter: <strong>{{ current_quarter }}</strong></p>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Active Clients Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Client Name</th>
+                                <th>Contact</th>
+                                <th>Program Type</th>
+                                <th>Roster Status</th>
+                                <th>Last Contact</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in client_data %}
+                            <tr>
+                                <td>
+                                    <a href="/clients/{{ data.client.id }}">
+                                        {{ data.client.name }}
+                                    </a>
+                                </td>
+                                <td>{{ data.client.contact_name }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ data.client.program_type }}</span>
+                                </td>
+                                <td>
+                                    {% if data.roster_received %}
+                                        <span class="badge bg-success">Received</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Not Received</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if data.days_last_contact is not none %}
+                                        {{ data.days_last_contact }} days ago
+                                    {% else %}
+                                        Never
+                                    {% endif %}
+                                </td>
+                                <td>{{ data.client.status }}</td>
+                                <td>
+                                    <a href="/clients/{{ data.client.id }}" class="btn btn-sm btn-primary">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

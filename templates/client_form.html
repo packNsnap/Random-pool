@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}{% if client %}Edit{% else %}Add{% endif %} Client - Pool Comms Console{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <h1>{% if client %}Edit{% else %}Add{% endif %} Client</h1>
+        
+        <div class="card mt-3">
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Client Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ client.name if client else '' }}" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contact_name" class="form-label">Contact Name *</label>
+                                <input type="text" class="form-control" id="contact_name" name="contact_name" 
+                                       value="{{ client.contact_name if client else '' }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contact_email" class="form-label">Contact Email *</label>
+                                <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                                       value="{{ client.contact_email if client else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="program_type" class="form-label">Program Type</label>
+                                <select class="form-select" id="program_type" name="program_type">
+                                    <option value="DOT" {% if client and client.program_type == "DOT" %}selected{% endif %}>DOT</option>
+                                    <option value="Non-DOT" {% if client and client.program_type == "Non-DOT" %}selected{% endif %}>Non-DOT</option>
+                                    <option value="Special" {% if client and client.program_type == "Special" %}selected{% endif %}>Special</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="progress_frequency_days" class="form-label">Progress Update Frequency (Days)</label>
+                                <input type="number" class="form-control" id="progress_frequency_days" name="progress_frequency_days" 
+                                       value="{{ client.progress_frequency_days if client else 14 }}" min="1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="active" name="active" value="true"
+                                   {% if not client or client.active %}checked{% endif %}>
+                            <label class="form-check-label" for="active">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3">{{ client.notes if client else '' }}</textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <a href="/clients" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

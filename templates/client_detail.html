@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}{{ client.name }} - Pool Comms Console{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>{{ client.name }}</h1>
+            <div>
+                <a href="/clients/{{ client.id }}/edit" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+                <a href="/clients" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Client Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Contact Name:</th>
+                        <td>{{ client.contact_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Contact Email:</th>
+                        <td>{{ client.contact_email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Program Type:</th>
+                        <td><span class="badge bg-info">{{ client.program_type }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>{{ client.status }}</td>
+                    </tr>
+                    <tr>
+                        <th>Active:</th>
+                        <td>
+                            {% if client.active %}
+                                <span class="badge bg-success">Yes</span>
+                            {% else %}
+                                <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Progress Update Frequency:</th>
+                        <td>Every {{ client.progress_frequency_days }} days</td>
+                    </tr>
+                    {% if client.notes %}
+                    <tr>
+                        <th>Notes:</th>
+                        <td>{{ client.notes }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="/clients/{{ client.id }}/send_roster_request" class="mb-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-envelope-send"></i> Send Roster Request
+                    </button>
+                </form>
+                
+                <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#markRosterModal">
+                    <i class="bi bi-check-circle"></i> Mark Roster as Received
+                </button>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Contact History</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>Last Roster Request:</th>
+                        <td>{{ client.last_roster_request_at|format_datetime }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Roster Received:</th>
+                        <td>{{ client.last_roster_received_at|format_datetime }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Progress Update:</th>
+                        <td>{{ client.last_progress_update_at|format_datetime }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Rosters</h5>
+            </div>
+            <div class="card-body">
+                {% if rosters %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Quarter</th>
+                                <th>Received</th>
+                                <th>File</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for roster in rosters %}
+                            <tr>
+                                <td>{{ roster.quarter }}</td>
+                                <td>{{ roster.received_at|format_datetime }}</td>
+                                <td>
+                                    {% if roster.file_path %}
+                                        <i class="bi bi-file-earmark-check text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-dash"></i>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No rosters recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Email Activity</h5>
+            </div>
+            <div class="card-body">
+                {% if email_logs %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Subject</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in email_logs %}
+                            <tr>
+                                <td>{{ log.sent_at|format_datetime }}</td>
+                                <td>{{ log.subject }}</td>
+                                <td>
+                                    {% if log.status == 'sent' %}
+                                        <span class="badge bg-success">Sent</span>
+                                    {% elif log.status == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No email activity yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="markRosterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/clients/{{ client.id }}/mark_roster_received" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mark Roster as Received</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="quarter" class="form-label">Quarter</label>
+                        <input type="text" class="form-control" id="quarter" name="quarter" 
+                               value="{{ current_quarter }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Roster File (Optional)</label>
+                        <input type="file" class="form-control" id="file" name="file">
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

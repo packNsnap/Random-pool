@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{% if template %}Edit{% else %}Add{% endif %} Template - Pool Comms Console{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-10 offset-md-1">
+        <h1>{% if template %}Edit{% else %}Add{% endif %} Email Template</h1>
+        
+        <div class="card mt-3">
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Template Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ template.name if template else '' }}" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="template_type" class="form-label">Template Type *</label>
+                                <select class="form-select" id="template_type" name="template_type" required>
+                                    <option value="roster_request" {% if template and template.template_type == "roster_request" %}selected{% endif %}>Roster Request</option>
+                                    <option value="follow_up" {% if template and template.template_type == "follow_up" %}selected{% endif %}>Follow Up</option>
+                                    <option value="progress_update" {% if template and template.template_type == "progress_update" %}selected{% endif %}>Progress Update</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="active" name="active" value="true"
+                                           {% if not template or template.active %}checked{% endif %}>
+                                    <label class="form-check-label" for="active">
+                                        Active
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subject_template" class="form-label">Subject Template *</label>
+                        <input type="text" class="form-control" id="subject_template" name="subject_template" 
+                               value="{{ template.subject_template if template else '' }}" required>
+                        <small class="text-muted">Use placeholders like {{"{{"}}client_name{{"}}"}}, {{"{{"}}quarter{{"}}"}}</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="body_template" class="form-label">Body Template *</label>
+                        <textarea class="form-control" id="body_template" name="body_template" rows="10" required>{{ template.body_template if template else '' }}</textarea>
+                        <small class="text-muted">
+                            Available placeholders: {{"{{"}}client_name{{"}}"}}, {{"{{"}}contact_name{{"}}"}}, 
+                            {{"{{"}}quarter{{"}}"}}, {{"{{"}}due_date{{"}}"}}, {{"{{"}}days_overdue{{"}}"}}, {{"{{"}}update_date{{"}}"}}
+                        </small>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <a href="/templates" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
