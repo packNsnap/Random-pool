@@ -68,7 +68,8 @@ class EmailService:
         body: str,
         attachments: Optional[List[str]] = None,
         client_id: Optional[int] = None,
-        template_id: Optional[int] = None
+        template_id: Optional[int] = None,
+        cc_emails: Optional[List[str]] = None
     ) -> tuple[bool, str]:
         log = EmailLog(
             client_id=client_id,
@@ -86,6 +87,9 @@ class EmailService:
             msg['From'] = f"{self.config.from_name} <{self.config.from_email}>"
             msg['To'] = to_email
             msg['Subject'] = subject
+            
+            if cc_emails:
+                msg['Cc'] = ', '.join(cc_emails)
             
             msg.attach(MIMEText(body, 'plain'))
             
@@ -134,13 +138,16 @@ class EmailService:
         subject = render_template_string(template.subject_template, variables)
         body = render_template_string(template.body_template, variables)
         
+        cc_emails = [cc.email for cc in client.cc_emails] if client.cc_emails else None
+        
         return self.send_email(
             to_email=client.contact_email,
             subject=subject,
             body=body,
             attachments=attachments,
             client_id=client.id,
-            template_id=template.id
+            template_id=template.id,
+            cc_emails=cc_emails
         )
     
     def get_config(self) -> EmailConfig:
