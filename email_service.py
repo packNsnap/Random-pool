@@ -22,7 +22,7 @@ class EmailConfig:
         self.smtp_username = self.get_setting("smtp_username", "")
         self.smtp_password = self.get_setting("smtp_password", "")
         self.from_email = self.get_setting("from_email", "")
-        self.from_name = self.get_setting("from_name", "Pool Comms Console")
+        self.from_name = self.get_setting("from_name", "Random Pool Management")
     
     def get_setting(self, key: str, default: str = "") -> str:
         setting = self.db.query(Settings).filter(Settings.key == key).first()

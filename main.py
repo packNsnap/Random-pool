@@ -20,7 +20,7 @@ from email_service import EmailService
 from scheduler import start_scheduler
 from utils import get_current_quarter, format_datetime, days_since, render_template_string
 
-app = FastAPI(title="Random Pool Comms Console")
+app = FastAPI(title="Random Pool Management")
 
 SESSION_SECRET = os.getenv("SESSION_SECRET")
 if not SESSION_SECRET:
@@ -1022,7 +1022,7 @@ async def update_email_settings(
     smtp_username: str = Form(...),
     smtp_password: str = Form(...),
     from_email: str = Form(...),
-    from_name: str = Form("Pool Comms Console"),
+    from_name: str = Form("Random Pool Management"),
     user: User = Depends(require_login),
     db: Session = Depends(get_db)
 ):
