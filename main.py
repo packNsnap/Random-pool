@@ -9,10 +9,12 @@ import os
 import shutil
 import uuid
 import re
+import csv
+import io
 from typing import Optional
 
 from database import get_db, init_db
-from models import User, Client, Roster, EmailTemplate, EmailLog, Settings, Attachment
+from models import User, Client, Roster, EmailTemplate, EmailLog, Settings, Attachment, RosterEntry
 from auth import authenticate_user, require_login, get_current_user, hash_password
 from email_service import EmailService
 from scheduler import start_scheduler
@@ -353,6 +355,67 @@ async def mark_roster_received(
     
     return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
 
+@app.post("/clients/{client_id}/upload_roster_csv")
+async def upload_roster_csv(
+    client_id: int,
+    quarter: str = Form(...),
+    file: UploadFile = File(...),
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    if not file.filename or not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Please upload a CSV file")
+    
+    content = await file.read()
+    csv_data = content.decode('utf-8')
+    csv_reader = csv.DictReader(io.StringIO(csv_data))
+    
+    file_path = f"uploads/rosters/{client_id}_{quarter}_{file.filename}"
+    with open(file_path, "wb") as buffer:
+        buffer.write(content)
+    
+    roster = db.query(Roster).filter(
+        Roster.client_id == client_id,
+        Roster.quarter == quarter
+    ).first()
+    
+    if not roster:
+        roster = Roster(
+            client_id=client_id,
+            quarter=quarter,
+            file_path=file_path
+        )
+        db.add(roster)
+        db.flush()
+    
+    entries_added = 0
+    for row in csv_reader:
+        employee_name = row.get('employee_name') or row.get('name') or row.get('Name') or row.get('Employee Name')
+        if not employee_name:
+            continue
+        
+        entry = RosterEntry(
+            roster_id=roster.id,
+            client_id=client_id,
+            employee_name=employee_name,
+            employee_id=row.get('employee_id') or row.get('ID') or row.get('Employee ID'),
+            position=row.get('position') or row.get('Position') or row.get('Job Title'),
+            department=row.get('department') or row.get('Department'),
+            has_tested=False
+        )
+        db.add(entry)
+        entries_added += 1
+    
+    client.last_roster_received_at = datetime.utcnow()
+    client.status = f"Roster Uploaded ({entries_added} entries)"
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}/roster?roster_id={roster.id}", status_code=303)
+
 @app.post("/clients/{client_id}/attachments")
 async def upload_attachment(
     client_id: int,
@@ -534,6 +597,67 @@ async def update_template(
     db.commit()
     
     return RedirectResponse(url="/templates", status_code=303)
+
+@app.get("/clients/{client_id}/roster", response_class=HTMLResponse)
+async def view_roster(
+    request: Request,
+    client_id: int,
+    roster_id: Optional[int] = None,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    if roster_id:
+        roster = db.query(Roster).filter(Roster.id == roster_id).first()
+    else:
+        roster = db.query(Roster).filter(Roster.client_id == client_id).order_by(Roster.received_at.desc()).first()
+    
+    if not roster:
+        return templates.TemplateResponse("roster_view.html", {
+            "request": request,
+            "user": user,
+            "client": client,
+            "roster": None,
+            "entries": [],
+            "stats": {"total": 0, "tested": 0, "not_tested": 0}
+        })
+    
+    entries = db.query(RosterEntry).filter(RosterEntry.roster_id == roster.id).all()
+    
+    tested_count = sum(1 for e in entries if e.has_tested)
+    stats = {
+        "total": len(entries),
+        "tested": tested_count,
+        "not_tested": len(entries) - tested_count
+    }
+    
+    return templates.TemplateResponse("roster_view.html", {
+        "request": request,
+        "user": user,
+        "client": client,
+        "roster": roster,
+        "entries": entries,
+        "stats": stats
+    })
+
+@app.post("/roster_entries/{entry_id}/toggle_test")
+async def toggle_test_status(
+    entry_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    entry = db.query(RosterEntry).filter(RosterEntry.id == entry_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    
+    entry.has_tested = not entry.has_tested
+    entry.test_date = datetime.utcnow() if entry.has_tested else None
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{entry.client_id}/roster?roster_id={entry.roster_id}", status_code=303)
 
 @app.get("/logs", response_class=HTMLResponse)
 async def email_logs(

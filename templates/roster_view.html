@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Roster Management - {{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-list-check"></i> Roster Management - {{ client.name }}
+            </h2>
+            <a href="/clients/{{ client.id }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Client
+            </a>
+        </div>
+
+        {% if not roster %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No roster uploaded yet. Please upload a CSV file from the client detail page.
+        </div>
+        {% else %}
+        
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-people"></i> Total Employees</h5>
+                        <h2>{{ stats.total }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-check-circle"></i> Tested</h5>
+                        <h2>{{ stats.tested }}</h2>
+                        {% if stats.total > 0 %}
+                        <small>{{ (stats.tested / stats.total * 100)|round(1) }}%</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> Not Tested</h5>
+                        <h2>{{ stats.not_tested }}</h2>
+                        {% if stats.total > 0 %}
+                        <small>{{ (stats.not_tested / stats.total * 100)|round(1) }}%</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> 
+                    Roster: {{ roster.quarter }}
+                    <small class="text-muted">(Uploaded: {{ roster.received_at|format_datetime }})</small>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Employee Name</th>
+                                <th>Employee ID</th>
+                                <th>Position</th>
+                                <th>Department</th>
+                                <th>Testing Status</th>
+                                <th>Test Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in entries %}
+                            <tr>
+                                <td>{{ entry.employee_name }}</td>
+                                <td>{{ entry.employee_id or '-' }}</td>
+                                <td>{{ entry.position or '-' }}</td>
+                                <td>{{ entry.department or '-' }}</td>
+                                <td>
+                                    {% if entry.has_tested %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Tested
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-hourglass-split"></i> Not Tested
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ entry.test_date|format_datetime if entry.test_date else '-' }}</td>
+                                <td>
+                                    <form method="post" action="/roster_entries/{{ entry.id }}/toggle_test" style="display: inline;">
+                                        {% if entry.has_tested %}
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Mark as Not Tested">
+                                            <i class="bi bi-x-circle"></i> Mark Not Tested
+                                        </button>
+                                        {% else %}
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Mark as Tested">
+                                            <i class="bi bi-check-circle"></i> Mark Tested
+                                        </button>
+                                        {% endif %}
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
