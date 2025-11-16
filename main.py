@@ -338,6 +338,69 @@ async def send_update(
     
     return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
 
+@app.post("/clients/{client_id}/send_quarterly_selections")
+async def send_quarterly_selections(
+    client_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    template = db.query(EmailTemplate).filter(
+        EmailTemplate.template_type == "quarterly_selections",
+        EmailTemplate.active == True
+    ).first()
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="No quarterly selections template found")
+    
+    current_quarter = get_current_quarter()
+    
+    latest_roster = db.query(Roster).filter(
+        Roster.client_id == client_id
+    ).order_by(Roster.received_at.desc()).first()
+    
+    roster_quarter = latest_roster.quarter if latest_roster else current_quarter
+    
+    entries = []
+    tested_count = 0
+    not_tested_count = 0
+    excused_count = 0
+    
+    if latest_roster:
+        entries = db.query(RosterEntry).filter(
+            RosterEntry.roster_id == latest_roster.id
+        ).all()
+        tested_count = sum(1 for e in entries if e.testing_status == "tested")
+        excused_count = sum(1 for e in entries if e.testing_status == "excused")
+        not_tested_count = sum(1 for e in entries if e.testing_status == "not_tested")
+    
+    variables = {
+        "client_name": client.name,
+        "contact_name": client.contact_name,
+        "quarter": current_quarter,
+        "roster_quarter": roster_quarter,
+        "total_employees": len(entries),
+        "tested_count": tested_count,
+        "not_tested_count": not_tested_count,
+        "excused_count": excused_count,
+        "send_date": datetime.utcnow().strftime("%B %d, %Y")
+    }
+    
+    attachment_paths = [os.path.join("uploads", "attachments", att.filename) 
+                        for att in client.attachments if att.category == "quarterly_selections"]
+    
+    email_service = EmailService(db)
+    success, message = email_service.send_from_template(client, template, variables, attachments=attachment_paths)
+    
+    if success:
+        client.status = "Quarterly Selections Sent"
+        db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
 @app.post("/clients/{client_id}/mark_roster_received")
 async def mark_roster_received(
     client_id: int,
