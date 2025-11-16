@@ -47,6 +47,26 @@ class Roster(Base):
     notes = Column(Text, nullable=True)
     
     client = relationship("Client", back_populates="rosters")
+    entries = relationship("RosterEntry", back_populates="roster", cascade="all, delete-orphan")
+
+class RosterEntry(Base):
+    __tablename__ = "roster_entries"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    roster_id = Column(Integer, ForeignKey("rosters.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
+    employee_name = Column(String, nullable=False)
+    employee_id = Column(String, nullable=True)
+    position = Column(String, nullable=True)
+    department = Column(String, nullable=True)
+    has_tested = Column(Boolean, default=False)
+    test_date = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    roster = relationship("Roster", back_populates="entries")
+    client = relationship("Client")
 
 class EmailTemplate(Base):
     __tablename__ = "email_templates"
