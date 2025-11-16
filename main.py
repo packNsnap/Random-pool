@@ -543,20 +543,39 @@ async def upload_roster_csv(
     user: User = Depends(require_login),
     db: Session = Depends(get_db)
 ):
+    from openpyxl import load_workbook
+    
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     
-    if not file.filename or not file.filename.endswith('.csv'):
-        raise HTTPException(status_code=400, detail="Please upload a CSV file")
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Please upload a file")
+    
+    is_csv = file.filename.endswith('.csv')
+    is_xlsx = file.filename.endswith('.xlsx') or file.filename.endswith('.xls')
+    
+    if not (is_csv or is_xlsx):
+        raise HTTPException(status_code=400, detail="Please upload a CSV or XLSX file")
     
     content = await file.read()
-    csv_data = content.decode('utf-8')
-    csv_reader = csv.DictReader(io.StringIO(csv_data))
-    
     file_path = f"uploads/rosters/{client_id}_{quarter}_{file.filename}"
     with open(file_path, "wb") as buffer:
         buffer.write(content)
+    
+    # Parse the file based on type
+    rows = []
+    if is_csv:
+        csv_data = content.decode('utf-8')
+        csv_reader = csv.DictReader(io.StringIO(csv_data))
+        rows = list(csv_reader)
+    else:  # XLSX
+        workbook = load_workbook(file_path)
+        sheet = workbook.active
+        headers = [cell.value for cell in sheet[1]]
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            row_dict = {headers[i]: row[i] for i in range(len(headers)) if i < len(row)}
+            rows.append(row_dict)
     
     roster = db.query(Roster).filter(
         Roster.client_id == client_id,
@@ -573,8 +592,8 @@ async def upload_roster_csv(
         db.flush()
     
     entries_added = 0
-    for row in csv_reader:
-        normalized_row = {k.lower().strip().replace(' ', '_'): v for k, v in row.items() if v}
+    for row in rows:
+        normalized_row = {k.lower().strip().replace(' ', '_'): v for k, v in row.items() if k and v}
         
         first_name = normalized_row.get('first_name') or ''
         last_name = normalized_row.get('last_name') or ''
