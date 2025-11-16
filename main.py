@@ -649,7 +649,7 @@ async def view_roster(
             "client": client,
             "roster": None,
             "entries": [],
-            "stats": {"total": 0, "tested": 0, "not_tested": 0}
+            "stats": {"total": 0, "tested": 0, "not_tested": 0, "excused": 0}
         })
     
     entries = db.query(RosterEntry).filter(RosterEntry.roster_id == roster.id).all()

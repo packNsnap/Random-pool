@@ -21,15 +21,15 @@
         {% else %}
         
         <div class="row mb-4">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card text-white bg-primary">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-people"></i> Total Employees</h5>
+                        <h5 class="card-title"><i class="bi bi-people"></i> Total</h5>
                         <h2>{{ stats.total }}</h2>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card text-white bg-success">
                     <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-check-circle"></i> Tested</h5>
@@ -40,13 +40,24 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card text-white bg-warning">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> Not Tested</h5>
+                        <h5 class="card-title"><i class="bi bi-hourglass-split"></i> Not Tested</h5>
                         <h2>{{ stats.not_tested }}</h2>
                         {% if stats.total > 0 %}
                         <small>{{ (stats.not_tested / stats.total * 100)|round(1) }}%</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-shield-check"></i> Excused</h5>
+                        <h2>{{ stats.excused }}</h2>
+                        {% if stats.total > 0 %}
+                        <small>{{ (stats.excused / stats.total * 100)|round(1) }}%</small>
                         {% endif %}
                     </div>
                 </div>
@@ -83,9 +94,13 @@
                                 <td>{{ entry.position or '-' }}</td>
                                 <td>{{ entry.department or '-' }}</td>
                                 <td>
-                                    {% if entry.has_tested %}
+                                    {% if entry.testing_status == "tested" %}
                                     <span class="badge bg-success">
                                         <i class="bi bi-check-circle"></i> Tested
+                                    </span>
+                                    {% elif entry.testing_status == "excused" %}
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-shield-check"></i> Excused
                                     </span>
                                     {% else %}
                                     <span class="badge bg-warning text-dark">
@@ -96,13 +111,17 @@
                                 <td>{{ entry.test_date|format_datetime if entry.test_date else '-' }}</td>
                                 <td>
                                     <form method="post" action="/roster_entries/{{ entry.id }}/toggle_test" style="display: inline;">
-                                        {% if entry.has_tested %}
-                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Mark as Not Tested">
-                                            <i class="bi bi-x-circle"></i> Mark Not Tested
+                                        {% if entry.testing_status == "not_tested" %}
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Click to cycle: Not Tested → Tested → Excused">
+                                            <i class="bi bi-arrow-repeat"></i> Mark Tested
+                                        </button>
+                                        {% elif entry.testing_status == "tested" %}
+                                        <button type="submit" class="btn btn-sm btn-outline-info" title="Click to cycle: Tested → Excused → Not Tested">
+                                            <i class="bi bi-arrow-repeat"></i> Mark Excused
                                         </button>
                                         {% else %}
-                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Mark as Tested">
-                                            <i class="bi bi-check-circle"></i> Mark Tested
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Click to cycle: Excused → Not Tested → Tested">
+                                            <i class="bi bi-arrow-repeat"></i> Mark Not Tested
                                         </button>
                                         {% endif %}
                                     </form>
