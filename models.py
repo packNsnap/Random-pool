@@ -34,6 +34,7 @@ class Client(Base):
     
     rosters = relationship("Roster", back_populates="client", cascade="all, delete-orphan")
     email_logs = relationship("EmailLog", back_populates="client", cascade="all, delete-orphan")
+    attachments = relationship("Attachment", back_populates="client", cascade="all, delete-orphan")
 
 class Roster(Base):
     __tablename__ = "rosters"
@@ -83,3 +84,16 @@ class Settings(Base):
     key = Column(String, unique=True, nullable=False)
     value = Column(Text, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Attachment(Base):
+    __tablename__ = "attachments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
+    filename = Column(String, nullable=False)
+    original_filename = Column(String, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    description = Column(String, nullable=True)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    
+    client = relationship("Client", back_populates="attachments")
