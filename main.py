@@ -368,16 +368,27 @@ async def send_template_email(
     }
     
     if roster:
-        tested_count = len([e for e in roster.entries if e.testing_status == "tested"])
-        not_tested_count = len([e for e in roster.entries if e.testing_status == "not_tested"])
-        excused_count = len([e for e in roster.entries if e.testing_status == "excused"])
+        tested_entries = [e for e in roster.entries if e.testing_status == "tested"]
+        not_tested_entries = [e for e in roster.entries if e.testing_status == "not_tested"]
+        excused_entries = [e for e in roster.entries if e.testing_status == "excused"]
+        
+        tested_count = len(tested_entries)
+        not_tested_count = len(not_tested_entries)
+        excused_count = len(excused_entries)
+        
+        tested_list = "\n".join([f"- {e.employee_name} ({e.employee_id or 'No ID'})" for e in tested_entries]) if tested_entries else "None"
+        not_tested_list = "\n".join([f"- {e.employee_name} ({e.employee_id or 'No ID'})" for e in not_tested_entries]) if not_tested_entries else "None"
+        excused_list = "\n".join([f"- {e.employee_name} ({e.employee_id or 'No ID'})" for e in excused_entries]) if excused_entries else "None"
         
         variables.update({
             "roster_quarter": roster.quarter,
             "total_employees": len(roster.entries),
             "tested_count": tested_count,
             "not_tested_count": not_tested_count,
-            "excused_count": excused_count
+            "excused_count": excused_count,
+            "tested_list": tested_list,
+            "not_tested_list": not_tested_list,
+            "excused_list": excused_list
         })
     
     attachment_paths = []
@@ -388,8 +399,33 @@ async def send_template_email(
         ).all()
         attachment_paths = [os.path.join("uploads", "attachments", a.filename) for a in attachments]
     
+    if template.template_type == "progress_update" and roster:
+        csv_filename = f"{client.name.replace(' ', '_')}_roster_status_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+        csv_path = os.path.join("uploads", "temp", csv_filename)
+        os.makedirs("uploads/temp", exist_ok=True)
+        
+        with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['Employee Name', 'Employee ID', 'Position', 'Department', 'Testing Status', 'Test Date'])
+            
+            for entry in roster.entries:
+                writer.writerow([
+                    entry.employee_name,
+                    entry.employee_id or '',
+                    entry.position or '',
+                    entry.department or '',
+                    entry.testing_status,
+                    entry.test_date.strftime('%Y-%m-%d %H:%M') if entry.test_date else ''
+                ])
+        
+        attachment_paths.append(csv_path)
+    
     email_service = EmailService(db)
     success, message = email_service.send_from_template(client, template, variables, attachment_paths)
+    
+    if template.template_type == "progress_update" and roster:
+        if os.path.exists(csv_path):
+            os.remove(csv_path)
     
     if success:
         if template.template_type == "roster_request":
