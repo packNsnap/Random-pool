@@ -13,7 +13,10 @@ A Python-based client communication management system for automating quarterly r
 ## Features
 - User authentication system
 - Client and contact management
-- **CSV Roster Management** - Upload roster CSV files to import employee data
+- **CSV Roster Management** - Upload roster CSV files to import employee data with 12+ fields
+- **Enhanced CSV Import** - Supports Primary ID, Last Name, First Name, Company, Modality, Location, Division, Supervisor Name, and Alternate IDs
+- **Roster CSV Export** - Download complete roster data with all fields and testing status
+- **Toggle Roster Status** - Quick button to mark roster as received/not received
 - **Roster Version Control** - Delete entire roster versions when no longer needed
 - **Three-State Testing Status** - Track employees as tested/not tested/excused with dates
 - **Roster Entry Management** - View and manage individual roster entries per client with status cycling
@@ -86,6 +89,15 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{report_date}}` - Report generation date
 
 ## Recent Changes
+- 2025-11-16: Enhanced Roster Management Features
+  - **Roster Status Toggle**: Added quick toggle button on client detail page to mark roster as received/not received with visual indicators
+  - **CSV Export with All Fields**: Download button on roster view exports complete roster data with all 18 fields including Primary ID, Last Name, First Name, Company, Modality, Location, Division, Supervisor Name, Alternate IDs, testing status, and test dates
+  - **Enhanced CSV Import**: CSV upload now supports 12 additional fields beyond basic employee info:
+    - Primary ID, Last Name, First Name (auto-combines to employee name)
+    - Company, Modality, Location, Division
+    - Supervisor Name
+    - Alternate ID + Type, Alternate ID 2 + Type
+  - **Database Migration**: Added 12 new columns to roster_entries table to store extended employee information
 - 2025-11-16: Enhanced Progress Update Emails
   - **Real Roster Data**: Progress update emails now include actual testing statistics (total employees, tested count, not tested count, excused count, percentage tested)
   - **Employee Lists**: Detailed lists of employees in each testing status category included in email body
