@@ -24,7 +24,9 @@ A Python-based client communication management system for automating quarterly r
 - **Quarterly Selections Quick Action** - Send random pool quarterly selection emails with multiple attachments
 - **CC Email Support** - Add multiple CC email recipients per client for automatic inclusion in all automated emails
 - **Weekly Testing Reports** - Automated email reports showing tested vs not tested employees
-- Email template management with placeholders
+- **Dynamic Email Templates** - Create, edit, and delete custom email templates
+- **Dynamic Quick Actions** - Active templates automatically appear as quick action buttons on client pages
+- Email template management with placeholders and attachment integration
 - Configurable email provider (Gmail/Outlook)
 - **Enhanced Reminder Settings** - Per-client reminder preferences with custom frequencies
 - Automated scheduling for roster reminders, follow-ups, and progress updates
@@ -83,6 +85,13 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{report_date}}` - Report generation date
 
 ## Recent Changes
+- 2025-11-16: Dynamic Template & Quick Action System
+  - **Template CRUD**: Create, edit, and delete email templates with full management interface
+  - **Dynamic Quick Actions**: Active templates automatically generate quick action buttons on client detail pages
+  - **Generic Send Route**: Universal email sending route works with any template type
+  - **Enhanced Template UI**: Reorganized template management with helpful sidebars showing placeholders, template types, and attachment categories
+  - **Automatic Attachment Linking**: Template types automatically determine which attachments to include in emails
+  - **Template Status Control**: Toggle templates active/inactive to show/hide quick action buttons
 - 2025-11-16: Roster Management Enhancements
   - **Delete Roster Versions**: Added delete button in roster management section to remove entire rosters
   - **Manual Employee Add**: Add individual employees to existing rosters via modal form
