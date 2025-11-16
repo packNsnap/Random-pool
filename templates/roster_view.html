@@ -65,12 +65,15 @@
         </div>
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="bi bi-file-earmark-spreadsheet"></i> 
                     Roster: {{ roster.quarter }}
                     <small class="text-muted">(Uploaded: {{ roster.received_at|format_datetime }})</small>
                 </h5>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                    <i class="bi bi-plus-circle"></i> Add Employee
+                </button>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -83,7 +86,7 @@
                                 <th>Department</th>
                                 <th>Testing Status</th>
                                 <th>Test Date</th>
-                                <th>Action</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -113,17 +116,22 @@
                                     <form method="post" action="/roster_entries/{{ entry.id }}/toggle_test" style="display: inline;">
                                         {% if entry.testing_status == "not_tested" %}
                                         <button type="submit" class="btn btn-sm btn-outline-success" title="Click to cycle: Not Tested → Tested → Excused">
-                                            <i class="bi bi-arrow-repeat"></i> Mark Tested
+                                            <i class="bi bi-arrow-repeat"></i>
                                         </button>
                                         {% elif entry.testing_status == "tested" %}
                                         <button type="submit" class="btn btn-sm btn-outline-info" title="Click to cycle: Tested → Excused → Not Tested">
-                                            <i class="bi bi-arrow-repeat"></i> Mark Excused
+                                            <i class="bi bi-arrow-repeat"></i>
                                         </button>
                                         {% else %}
                                         <button type="submit" class="btn btn-sm btn-outline-warning" title="Click to cycle: Excused → Not Tested → Tested">
-                                            <i class="bi bi-arrow-repeat"></i> Mark Not Tested
+                                            <i class="bi bi-arrow-repeat"></i>
                                         </button>
                                         {% endif %}
+                                    </form>
+                                    <form method="post" action="/roster_entries/{{ entry.id }}/delete" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove {{ entry.employee_name }} from this roster?')" title="Delete employee">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </form>
                                 </td>
                             </tr>
@@ -136,4 +144,41 @@
         {% endif %}
     </div>
 </div>
+
+{% if roster %}
+<div class="modal fade" id="addEmployeeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/rosters/{{ roster.id }}/add_entry">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Employee to Roster</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="employee_name" class="form-label">Employee Name *</label>
+                        <input type="text" class="form-control" id="employee_name" name="employee_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="employee_id" class="form-label">Employee ID</label>
+                        <input type="text" class="form-control" id="employee_id" name="employee_id">
+                    </div>
+                    <div class="mb-3">
+                        <label for="position" class="form-label">Position</label>
+                        <input type="text" class="form-control" id="position" name="position">
+                    </div>
+                    <div class="mb-3">
+                        <label for="department" class="form-label">Department</label>
+                        <input type="text" class="form-control" id="department" name="department">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
