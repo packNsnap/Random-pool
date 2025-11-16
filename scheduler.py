@@ -221,18 +221,22 @@ def send_weekly_testing_reports():
             if not entries:
                 continue
             
-            tested_employees = [e for e in entries if e.has_tested]
-            not_tested_employees = [e for e in entries if not e.has_tested]
+            tested_employees = [e for e in entries if e.testing_status == "tested"]
+            not_tested_employees = [e for e in entries if e.testing_status == "not_tested"]
+            excused_employees = [e for e in entries if e.testing_status == "excused"]
             
             total = len(entries)
             tested_count = len(tested_employees)
             not_tested_count = len(not_tested_employees)
+            excused_count = len(excused_employees)
             tested_percentage = round((tested_count / total * 100), 1) if total > 0 else 0
             
             tested_list = "\n".join([f"  - {e.employee_name} ({e.position or 'N/A'}) - Tested on {e.test_date.strftime('%Y-%m-%d') if e.test_date else 'Unknown'}" 
                                       for e in tested_employees]) or "  None"
             not_tested_list = "\n".join([f"  - {e.employee_name} ({e.position or 'N/A'})" 
                                           for e in not_tested_employees]) or "  None"
+            excused_list = "\n".join([f"  - {e.employee_name} ({e.position or 'N/A'})" 
+                                       for e in excused_employees]) or "  None"
             
             template = get_roster_template_by_type(db, "testing_report")
             if not template:
@@ -246,9 +250,11 @@ def send_weekly_testing_reports():
                 "total_employees": total,
                 "tested_count": tested_count,
                 "not_tested_count": not_tested_count,
+                "excused_count": excused_count,
                 "tested_percentage": tested_percentage,
                 "tested_list": tested_list,
                 "not_tested_list": not_tested_list,
+                "excused_list": excused_list,
                 "report_date": datetime.utcnow().strftime("%B %d, %Y")
             }
             
