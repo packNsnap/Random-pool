@@ -774,6 +774,26 @@ async def view_roster(
         "stats": stats
     })
 
+@app.post("/rosters/{roster_id}/delete")
+async def delete_roster(
+    roster_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    roster = db.query(Roster).filter(Roster.id == roster_id).first()
+    if not roster:
+        raise HTTPException(status_code=404, detail="Roster not found")
+    
+    client_id = roster.client_id
+    
+    if roster.file_path and os.path.exists(roster.file_path):
+        os.remove(roster.file_path)
+    
+    db.delete(roster)
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
 @app.post("/roster_entries/{entry_id}/toggle_test")
 async def toggle_test_status(
     entry_id: int,
@@ -795,6 +815,52 @@ async def toggle_test_status(
     db.commit()
     
     return RedirectResponse(url=f"/clients/{entry.client_id}/roster?roster_id={entry.roster_id}", status_code=303)
+
+@app.post("/rosters/{roster_id}/add_entry")
+async def add_roster_entry(
+    roster_id: int,
+    employee_name: str = Form(...),
+    employee_id: Optional[str] = Form(None),
+    position: Optional[str] = Form(None),
+    department: Optional[str] = Form(None),
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    roster = db.query(Roster).filter(Roster.id == roster_id).first()
+    if not roster:
+        raise HTTPException(status_code=404, detail="Roster not found")
+    
+    entry = RosterEntry(
+        roster_id=roster_id,
+        client_id=roster.client_id,
+        employee_name=employee_name.strip(),
+        employee_id=employee_id.strip() if employee_id else None,
+        position=position.strip() if position else None,
+        department=department.strip() if department else None,
+        testing_status="not_tested"
+    )
+    db.add(entry)
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{roster.client_id}/roster?roster_id={roster_id}", status_code=303)
+
+@app.post("/roster_entries/{entry_id}/delete")
+async def delete_roster_entry(
+    entry_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    entry = db.query(RosterEntry).filter(RosterEntry.id == entry_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    
+    client_id = entry.client_id
+    roster_id = entry.roster_id
+    
+    db.delete(entry)
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}/roster?roster_id={roster_id}", status_code=303)
 
 @app.get("/logs", response_class=HTMLResponse)
 async def email_logs(
