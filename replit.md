@@ -20,6 +20,7 @@ A Python-based client communication management system for automating quarterly r
 - **Attachment categorization** - Separate attachments for roster requests, reminders, updates, and quarterly selections
 - Automated attachment inclusion in category-specific emails
 - **Quarterly Selections Quick Action** - Send random pool quarterly selection emails with multiple attachments
+- **CC Email Support** - Add multiple CC email recipients per client for automatic inclusion in all automated emails
 - **Weekly Testing Reports** - Automated email reports showing tested vs not tested employees
 - Email template management with placeholders
 - Configurable email provider (Gmail/Outlook)
@@ -80,6 +81,12 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{report_date}}` - Report generation date
 
 ## Recent Changes
+- 2025-11-16: CC Email Support Implementation
+  - **CCEmail Database Model**: Store multiple CC email addresses per client with optional names
+  - **Automatic Inclusion**: CC recipients automatically included in all automated emails (roster requests, reminders, updates, quarterly selections, testing reports)
+  - **Management UI**: Add and remove CC email addresses from client detail page
+  - **Email Service Integration**: Updated email service to support CC field in SMTP messages
+  - **User-Friendly Interface**: Simple modal form for adding CC recipients with email and optional name fields
 - 2025-11-16: Quarterly selections quick action added
   - **New Email Type**: Quarterly Selections email template with roster metrics
   - **Quick Action Button**: Send quarterly selections with multiple attachments
