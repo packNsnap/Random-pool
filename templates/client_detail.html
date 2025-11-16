@@ -275,6 +275,11 @@
                                     <a href="/clients/{{ client.id }}/roster?roster_id={{ roster.id }}" class="btn btn-xs btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i> View
                                     </a>
+                                    <form method="post" action="/rosters/{{ roster.id }}/delete" style="display:inline;">
+                                        <button type="submit" class="btn btn-xs btn-sm btn-danger" onclick="return confirm('Delete this roster and all its entries? This cannot be undone.')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                             {% endfor %}
