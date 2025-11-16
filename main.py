@@ -432,7 +432,7 @@ async def upload_roster_csv(
                      normalized_row.get('title')),
             department=(normalized_row.get('department') or 
                        normalized_row.get('dept')),
-            has_tested=False
+            testing_status="not_tested"
         )
         db.add(entry)
         entries_added += 1
@@ -654,11 +654,14 @@ async def view_roster(
     
     entries = db.query(RosterEntry).filter(RosterEntry.roster_id == roster.id).all()
     
-    tested_count = sum(1 for e in entries if e.has_tested)
+    tested_count = sum(1 for e in entries if e.testing_status == "tested")
+    excused_count = sum(1 for e in entries if e.testing_status == "excused")
+    not_tested_count = sum(1 for e in entries if e.testing_status == "not_tested")
     stats = {
         "total": len(entries),
         "tested": tested_count,
-        "not_tested": len(entries) - tested_count
+        "not_tested": not_tested_count,
+        "excused": excused_count
     }
     
     return templates.TemplateResponse("roster_view.html", {
@@ -680,8 +683,14 @@ async def toggle_test_status(
     if not entry:
         raise HTTPException(status_code=404, detail="Entry not found")
     
-    entry.has_tested = not entry.has_tested
-    entry.test_date = datetime.utcnow() if entry.has_tested else None
+    status_cycle = {
+        "not_tested": "tested",
+        "tested": "excused",
+        "excused": "not_tested"
+    }
+    
+    entry.testing_status = status_cycle.get(entry.testing_status, "not_tested")
+    entry.test_date = datetime.utcnow() if entry.testing_status == "tested" else None
     db.commit()
     
     return RedirectResponse(url=f"/clients/{entry.client_id}/roster?roster_id={entry.roster_id}", status_code=303)
