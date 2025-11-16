@@ -7,10 +7,12 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import os
 import shutil
+import uuid
+import re
 from typing import Optional
 
 from database import get_db, init_db
-from models import User, Client, Roster, EmailTemplate, EmailLog, Settings
+from models import User, Client, Roster, EmailTemplate, EmailLog, Settings, Attachment
 from auth import authenticate_user, require_login, get_current_user, hash_password
 from email_service import EmailService
 from scheduler import start_scheduler
@@ -30,6 +32,7 @@ templates.env.filters['days_since'] = days_since
 
 os.makedirs("static", exist_ok=True)
 os.makedirs("uploads/rosters", exist_ok=True)
+os.makedirs("uploads/attachments", exist_ok=True)
 
 try:
     app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -227,8 +230,10 @@ async def send_roster_request(
         "due_date": datetime.utcnow().strftime("%B %d, %Y")
     }
     
+    attachment_paths = [os.path.join("uploads", "attachments", att.filename) for att in client.attachments]
+    
     email_service = EmailService(db)
-    success, message = email_service.send_from_template(client, template, variables)
+    success, message = email_service.send_from_template(client, template, variables, attachments=attachment_paths)
     
     if success:
         client.last_roster_request_at = datetime.utcnow()
@@ -266,6 +271,106 @@ async def mark_roster_received(
     
     client.last_roster_received_at = datetime.utcnow()
     client.status = "Roster Received"
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
+@app.post("/clients/{client_id}/attachments")
+async def upload_attachment(
+    client_id: int,
+    file: UploadFile = File(...),
+    description: Optional[str] = Form(None),
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+    
+    original_filename = os.path.basename(file.filename)
+    sanitized_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', original_filename)
+    
+    content = await file.read()
+    file_size = len(content)
+    
+    if file_size > 3 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size must be less than 3MB")
+    
+    unique_id = str(uuid.uuid4())
+    extension = os.path.splitext(sanitized_filename)[1]
+    stored_filename = f"{client_id}_{unique_id}{extension}"
+    file_path = os.path.join("uploads", "attachments", stored_filename)
+    
+    with open(file_path, "wb") as buffer:
+        buffer.write(content)
+    
+    attachment = Attachment(
+        client_id=client_id,
+        filename=stored_filename,
+        original_filename=original_filename,
+        file_size=file_size,
+        description=description
+    )
+    db.add(attachment)
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
+@app.get("/attachments/{attachment_id}/download")
+async def download_attachment(
+    attachment_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    from fastapi.responses import FileResponse
+    
+    attachment = db.query(Attachment).filter(Attachment.id == attachment_id).first()
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+    
+    file_path = os.path.join("uploads", "attachments", attachment.filename)
+    
+    abs_file_path = os.path.abspath(file_path)
+    abs_upload_dir = os.path.abspath("uploads/attachments")
+    
+    if not abs_file_path.startswith(abs_upload_dir):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(
+        path=file_path,
+        filename=attachment.original_filename,
+        media_type="application/octet-stream"
+    )
+
+@app.post("/attachments/{attachment_id}/delete")
+async def delete_attachment(
+    attachment_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    attachment = db.query(Attachment).filter(Attachment.id == attachment_id).first()
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+    
+    client_id = attachment.client_id
+    file_path = os.path.join("uploads", "attachments", attachment.filename)
+    
+    abs_file_path = os.path.abspath(file_path)
+    abs_upload_dir = os.path.abspath("uploads/attachments")
+    
+    if not abs_file_path.startswith(abs_upload_dir):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    
+    db.delete(attachment)
     db.commit()
     
     return RedirectResponse(url=f"/clients/{client_id}", status_code=303)

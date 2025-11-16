@@ -111,6 +111,58 @@
 </div>
 
 <div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Quarterly Mailing Attachments</h5>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadAttachmentModal">
+                    <i class="bi bi-plus-circle"></i> Add Attachment
+                </button>
+            </div>
+            <div class="card-body">
+                {% if client.attachments %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Description</th>
+                                <th>Size</th>
+                                <th>Uploaded</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attachment in client.attachments %}
+                            <tr>
+                                <td>{{ attachment.original_filename }}</td>
+                                <td>{{ attachment.description or '-' }}</td>
+                                <td>{{ (attachment.file_size / 1024 / 1024)|round(2) }} MB</td>
+                                <td>{{ attachment.uploaded_at|format_datetime }}</td>
+                                <td>
+                                    <a href="/attachments/{{ attachment.id }}/download" class="btn btn-sm btn-secondary">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                    <form method="post" action="/attachments/{{ attachment.id }}/delete" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this attachment?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No attachments yet. These files will be automatically attached to quarterly roster requests.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
@@ -220,6 +272,34 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-success">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="uploadAttachmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/clients/{{ client.id }}/attachments" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Attachment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="attachment_file" class="form-label">File (Max 3MB)</label>
+                        <input type="file" class="form-control" id="attachment_file" name="file" required>
+                        <small class="text-muted">Upload passports, certifications, or other documents to include in quarterly mailings.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (Optional)</label>
+                        <input type="text" class="form-control" id="description" name="description" placeholder="e.g., Q1 Passport">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
                 </div>
             </form>
         </div>

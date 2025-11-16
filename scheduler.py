@@ -6,6 +6,7 @@ from models import Client, EmailTemplate
 from email_service import EmailService
 from utils import get_current_quarter, get_quarter_dates, days_since
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -67,10 +68,13 @@ def check_and_send_roster_reminders():
                 "due_date": quarter_end.strftime("%B %d, %Y")
             }
             
+            attachment_paths = [os.path.join("uploads", "attachments", att.filename) for att in client.attachments]
+            
             success, message = email_service.send_from_template(
                 client=client,
                 template=template,
-                variables=variables
+                variables=variables,
+                attachments=attachment_paths
             )
             
             if success:
@@ -123,10 +127,13 @@ def check_and_send_follow_ups():
                 "days_overdue": days_since_last_request
             }
             
+            attachment_paths = [os.path.join("uploads", "attachments", att.filename) for att in client.attachments]
+            
             success, message = email_service.send_from_template(
                 client=client,
                 template=template,
-                variables=variables
+                variables=variables,
+                attachments=attachment_paths
             )
             
             if success:
