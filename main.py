@@ -338,6 +338,66 @@ async def send_update(
     
     return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
 
+@app.post("/clients/{client_id}/send_email/{template_id}")
+async def send_template_email(
+    client_id: int,
+    template_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    template = db.query(EmailTemplate).filter(EmailTemplate.id == template_id).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    roster = db.query(Roster).filter(Roster.client_id == client_id).order_by(Roster.received_at.desc()).first()
+    
+    variables = {
+        "client_name": client.name,
+        "contact_name": client.contact_name,
+        "quarter": get_current_quarter(),
+        "due_date": format_datetime(datetime.utcnow()),
+        "days_overdue": days_since(client.last_roster_request_at) if client.last_roster_request_at else 0,
+        "update_date": format_datetime(datetime.utcnow()),
+        "send_date": format_datetime(datetime.utcnow())
+    }
+    
+    if roster:
+        tested_count = len([e for e in roster.entries if e.testing_status == "tested"])
+        not_tested_count = len([e for e in roster.entries if e.testing_status == "not_tested"])
+        excused_count = len([e for e in roster.entries if e.testing_status == "excused"])
+        
+        variables.update({
+            "roster_quarter": roster.quarter,
+            "total_employees": len(roster.entries),
+            "tested_count": tested_count,
+            "not_tested_count": not_tested_count,
+            "excused_count": excused_count
+        })
+    
+    attachment_paths = []
+    if template.template_type:
+        attachments = db.query(Attachment).filter(
+            Attachment.client_id == client_id,
+            Attachment.category == template.template_type
+        ).all()
+        attachment_paths = [os.path.join("uploads", "attachments", a.filename) for a in attachments]
+    
+    email_service = EmailService(db)
+    success, message = email_service.send_from_template(client, template, variables, attachment_paths)
+    
+    if success:
+        if template.template_type == "roster_request":
+            client.last_roster_request_at = datetime.utcnow()
+        elif template.template_type == "progress_update":
+            client.last_progress_update_at = datetime.utcnow()
+        db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
 @app.post("/clients/{client_id}/send_quarterly_selections")
 async def send_quarterly_selections(
     client_id: int,
@@ -701,6 +761,21 @@ async def edit_template_form(
         "user": user,
         "template": template
     })
+
+@app.post("/templates/{template_id}/delete")
+async def delete_template(
+    template_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    template = db.query(EmailTemplate).filter(EmailTemplate.id == template_id).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    db.delete(template)
+    db.commit()
+    
+    return RedirectResponse(url="/templates", status_code=303)
 
 @app.post("/templates/{template_id}/edit")
 async def update_template(
