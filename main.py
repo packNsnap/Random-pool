@@ -158,6 +158,7 @@ async def client_detail(
     
     rosters = sorted(client.rosters, key=lambda r: r.received_at, reverse=True)
     email_logs = db.query(EmailLog).filter(EmailLog.client_id == client_id).order_by(EmailLog.sent_at.desc()).limit(10).all()
+    active_templates = db.query(EmailTemplate).filter(EmailTemplate.active == True).all()
     
     return templates.TemplateResponse("client_detail.html", {
         "request": request,
@@ -165,7 +166,8 @@ async def client_detail(
         "client": client,
         "rosters": rosters,
         "email_logs": email_logs,
-        "current_quarter": get_current_quarter()
+        "current_quarter": get_current_quarter(),
+        "active_templates": active_templates
     })
 
 @app.get("/clients/{client_id}/edit", response_class=HTMLResponse)

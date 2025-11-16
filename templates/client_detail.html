@@ -74,31 +74,29 @@
                 <h5 class="mb-0">Quick Actions</h5>
             </div>
             <div class="card-body">
-                <form method="post" action="/clients/{{ client.id }}/send_roster_request" class="mb-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-envelope-send"></i> Send Roster Request
+                {% for template in active_templates %}
+                <form method="post" action="/clients/{{ client.id }}/send_email/{{ template.id }}" class="mb-2">
+                    <button type="submit" class="btn 
+                        {% if template.template_type == 'roster_request' %}btn-primary
+                        {% elif template.template_type == 'follow_up' %}btn-warning
+                        {% elif template.template_type == 'progress_update' %}btn-info
+                        {% elif template.template_type == 'quarterly_selections' %}btn-secondary
+                        {% elif template.template_type == 'testing_report' %}btn-success
+                        {% else %}btn-outline-primary
+                        {% endif %} w-100">
+                        <i class="bi 
+                            {% if template.template_type == 'roster_request' %}bi-envelope-send
+                            {% elif template.template_type == 'follow_up' %}bi-bell
+                            {% elif template.template_type == 'progress_update' %}bi-arrow-repeat
+                            {% elif template.template_type == 'quarterly_selections' %}bi-file-earmark-check
+                            {% elif template.template_type == 'testing_report' %}bi-clipboard-data
+                            {% else %}bi-envelope
+                            {% endif %}"></i> {{ template.name }}
                     </button>
                 </form>
+                {% endfor %}
                 
-                <form method="post" action="/clients/{{ client.id }}/send_reminder" class="mb-2">
-                    <button type="submit" class="btn btn-warning w-100">
-                        <i class="bi bi-bell"></i> Send Email Reminder
-                    </button>
-                </form>
-                
-                <form method="post" action="/clients/{{ client.id }}/send_update" class="mb-2">
-                    <button type="submit" class="btn btn-info w-100">
-                        <i class="bi bi-arrow-repeat"></i> Send Roster Update
-                    </button>
-                </form>
-                
-                <form method="post" action="/clients/{{ client.id }}/send_quarterly_selections" class="mb-3">
-                    <button type="submit" class="btn btn-secondary w-100">
-                        <i class="bi bi-file-earmark-check"></i> Send Quarterly Selections
-                    </button>
-                </form>
-                
-                <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#markRosterModal">
+                <button type="button" class="btn btn-success w-100 mt-2" data-bs-toggle="modal" data-bs-target="#markRosterModal">
                     <i class="bi bi-check-circle"></i> Mark Roster as Received
                 </button>
             </div>

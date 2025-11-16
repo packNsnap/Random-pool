@@ -50,6 +50,11 @@
                                     <a href="/templates/{{ template.id }}/edit" class="btn btn-sm btn-warning">
                                         <i class="bi bi-pencil"></i> Edit
                                     </a>
+                                    <form method="post" action="/templates/{{ template.id }}/delete" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this template? This cannot be undone.')">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                             {% endfor %}
