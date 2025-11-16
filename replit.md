@@ -14,6 +14,8 @@ A Python-based client communication management system for automating quarterly r
 - User authentication system
 - Client and contact management
 - Roster tracking with file upload capability
+- **Client-specific attachment management** - Upload passports, certifications, and other documents (max 3MB per file)
+- Automated attachment inclusion in quarterly roster request emails
 - Email template management with placeholders
 - Configurable email provider (Gmail/Outlook)
 - Automated scheduling for roster reminders and progress updates
@@ -36,6 +38,7 @@ A Python-based client communication management system for automating quarterly r
 - `init_db.py` - Database initialization script
 - `templates/` - Jinja2 HTML templates
 - `uploads/rosters/` - Uploaded roster files
+- `uploads/attachments/` - Client-specific attachment files
 
 ## Email Configuration
 The system supports both Gmail and Outlook/Office 365:
@@ -58,6 +61,10 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{update_date}}` - Current date
 
 ## Recent Changes
+- 2025-11-16: Added client-specific attachment management feature
+  - Upload passports, certifications, and documents (max 3MB per file)
+  - Attachments automatically included in quarterly roster request emails
+  - Secure file handling with UUID-based storage and path validation
 - 2025-01-16: Initial project setup with all core features
 - Configured for Gmail/Outlook switching capability
 - Created default email templates for roster requests, follow-ups, and progress updates
