@@ -1,0 +1,609 @@
+1. Full function of the web app
+Think of it as “Random Pool Comms Console”:
+A. Authentication
+
+
+Simple login for you (and maybe a few internal users).
+
+
+Only authenticated users can:
+
+
+View clients.
+
+
+Change schedules or templates.
+
+
+Manually trigger emails.
+
+
+
+
+B. Client & Contact Management
+One screen where you manage every client in the random pool program.
+Each client record stores:
+
+
+Client name
+
+
+Contact name
+
+
+Contact email
+
+
+Program type (DOT, Non DOT, special, etc if you want later)
+
+
+Frequency settings:
+
+
+Roster reminder frequency (quarterly)
+
+
+Progress update frequency (biweekly)
+
+
+
+
+Flags:
+
+
+Currently active? Y/N
+
+
+Special notes
+
+
+
+
+You can:
+
+
+Add / edit / deactivate clients.
+
+
+See overall status at a glance:
+
+
+“Roster received this quarter”
+
+
+“No roster”
+
+
+“Overdue X days”
+
+
+
+
+C. Roster Tracking
+Web app keeps track of:
+
+
+Last date the roster was requested.
+
+
+Last date the roster was received.
+
+
+Link to stored roster (file path or URL if you store it somewhere later).
+
+
+Actions:
+
+
+Upload a new roster file per client (even if you just store path and don’t fully parse it yet).
+
+
+Mark a roster as received and attach that file.
+
+
+Optional: manually override “provided roster” status.
+
+
+D. Email Templates
+You need reusable templates instead of rewriting the same thing every time.
+Email templates table:
+
+
+Template name (Roster Reminder, Second Notice, Biweekly Update, etc).
+
+
+Subject line (with placeholders like {{client_name}}).
+
+
+Body (with placeholders like {{client_name}}, {{quarter}}, {{due_date}}, etc).
+
+
+You should have at least:
+
+
+First roster request (quarterly).
+
+
+Second/third follow up if no response.
+
+
+Biweekly “progress update” summary email.
+
+
+In the UI you can:
+
+
+Create / edit templates.
+
+
+Preview template for a specific client (with placeholders filled).
+
+
+E. Email Sending Engine
+Core rule: this system sends all emails from your Plexus Gmail / Workspace account.
+Functions:
+
+
+Build email from:
+
+
+Chosen template.
+
+
+Client record.
+
+
+Quarter / dates.
+
+
+
+
+Decide whether to attach a file:
+
+
+Attach most recent roster form, instructions, or whatever you define.
+
+
+
+
+Send email through:
+
+
+Gmail API or SMTP (one account configured in settings).
+
+
+
+
+After sending:
+
+
+Log the result to an “Email Log”.
+
+
+Update the client’s status in the DB:
+
+
+last_contact_for_roster
+
+
+status = "Roster Request Sent" etc.
+
+
+
+
+
+
+F. Automation / Scheduling
+This is where you replace Make.com.
+You run a background scheduler that checks daily (or hourly):
+
+
+Quarterly roster reminders:
+
+
+For each active client:
+
+
+If we are within your defined “remind window” (e.g. 2 weeks before quarter end) and the client has not submitted a roster for this quarter:
+
+
+If no reminder has been sent in the last X days:
+
+
+Queue/send a roster request email using the proper template.
+
+
+
+
+
+
+
+
+
+
+Follow up if no roster:
+
+
+If Provided roster is still No N days after first reminder:
+
+
+Send follow up template 2.
+
+
+
+
+Possibly a final escalation template later.
+
+
+
+
+Biweekly progress updates:
+
+
+Every 14 days:
+
+
+Generate a summary email per client (for now this can be dumb text; later you can pull live Quest data if you want).
+
+
+Send update using the “biweekly update” template.
+
+
+
+
+
+
+Error handling:
+
+
+If email sending fails (SMTP error or invalid address), log it and optionally flag the client as “email failed”.
+
+
+
+
+G. Dashboards
+Main dashboard page shows:
+
+
+Table of all clients with:
+
+
+Last contact date.
+
+
+Roster received? Y/N.
+
+
+Days since last contact.
+
+
+Next scheduled action (e.g. “Roster reminder in 7 days”, “Follow up overdue”, etc).
+
+
+
+
+Email log page shows:
+
+
+Sent date.
+
+
+Client.
+
+
+Subject.
+
+
+Status (sent, failed).
+
+
+Error message if any.
+
+
+You can filter by date range or client.
+H. Manual Controls
+You can:
+
+
+Manually trigger “Send roster request now” for a specific client from their detail page.
+
+
+Manually mark a roster as received.
+
+
+Manually skip a client for this quarter if needed.
+
+
+
+2. Turn that into an actual web app
+You said “make it a web app”. Here’s the concrete shape.
+Tech stack (simple and realistic for Replit)
+
+
+Backend: Python + FastAPI or Flask
+
+
+Frontend: Server-rendered HTML templates (Jinja2) to keep it simple
+
+
+Database: SQLite (file-based, plenty for this)
+
+
+Email: Python smtplib or Gmail API if you want OAuth later
+
+
+Scheduler: APScheduler or a custom loop started with the app
+
+
+I’ll lay it out with FastAPI + Jinja2.
+A. Database tables
+
+
+clients
+
+
+id (int, PK)
+
+
+name
+
+
+contact_name
+
+
+contact_email
+
+
+active (bool)
+
+
+roster_frequency (string, e.g. “quarterly”)
+
+
+progress_frequency_days (int, default 14)
+
+
+last_roster_request_at (datetime)
+
+
+last_roster_received_at (datetime)
+
+
+status (string)
+
+
+notes (text)
+
+
+
+
+rosters
+
+
+id
+
+
+client_id
+
+
+quarter (string, e.g. “2025-Q1”)
+
+
+received_at (datetime)
+
+
+file_path (string)
+
+
+
+
+email_templates
+
+
+id
+
+
+name
+
+
+subject_template (text)
+
+
+body_template (text)
+
+
+type (enum: “roster_request”, “follow_up”, “progress_update”)
+
+
+
+
+email_logs
+
+
+id
+
+
+client_id
+
+
+template_id
+
+
+subject
+
+
+body
+
+
+sent_at
+
+
+status (sent / failed)
+
+
+error_message (nullable)
+
+
+
+
+users (for login)
+
+
+id
+
+
+username
+
+
+password_hash
+
+
+role (admin / viewer)
+
+
+
+
+B. Main screens (routes)
+
+
+GET /login and POST /login – login form.
+
+
+GET / – dashboard (clients with key stats).
+
+
+GET /clients – list clients.
+
+
+GET /clients/{id} – client detail (status, last roster, manual actions).
+
+
+GET /clients/new + POST /clients – add client.
+
+
+GET /clients/{id}/edit + POST – update client.
+
+
+GET /templates – list templates.
+
+
+GET /templates/new / POST – create template.
+
+
+GET /templates/{id}/edit / POST – edit.
+
+
+GET /logs – email logs, filters.
+
+
+POST /clients/{id}/send_roster_request – manual trigger.
+
+
+POST /clients/{id}/mark_roster_received – mark roster received, upload file.
+
+
+C. Scheduler logic (pseudo)
+Runs every morning.
+def scheduler_tick():
+    today = date.today()
+    current_quarter = get_current_quarter(today)
+
+    for client in get_active_clients():
+        # 1) Quarterly roster reminder logic
+        if needs_roster_reminder(client, current_quarter, today):
+            send_roster_email(client, template_type="roster_request", quarter=current_quarter)
+
+        # 2) Follow up logic
+        if needs_follow_up(client, current_quarter, today):
+            send_roster_email(client, template_type="follow_up", quarter=current_quarter)
+
+        # 3) Biweekly progress update
+        if needs_progress_update(client, today):
+            send_progress_email(client)
+
+Each send_* function:
+
+
+Renders subject/body from template and variables.
+
+
+Sends email via SMTP or Gmail API.
+
+
+Logs to email_logs.
+
+
+Updates clients table (status and dates).
+
+
+D. Minimal FastAPI skeleton
+I’m not dumping a massive codebase here, but this is what your main.py shape looks like:
+from fastapi import FastAPI, Request, Depends, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
+
+app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=scheduler_tick, trigger="interval", hours=24)
+scheduler.start()
+
+@app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request, user=Depends(require_login)):
+    clients = get_clients_with_status()
+    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "clients": clients})
+
+@app.get("/clients", response_class=HTMLResponse)
+async def list_clients(request: Request, user=Depends(require_login)):
+    clients = get_all_clients()
+    return templates.TemplateResponse("clients.html", {"request": request, "clients": clients})
+
+@app.post("/clients/{client_id}/send_roster_request")
+async def manual_send_roster(client_id: int, user=Depends(require_login)):
+    client = get_client(client_id)
+    send_roster_email(client, template_type="roster_request", quarter=get_current_quarter(datetime.utcnow().date()))
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
+You’d add:
+
+
+Auth middleware.
+
+
+DB helpers (get_client, get_active_clients, etc).
+
+
+Email sending helper.
+
+
+
+Bottom line
+Functionally, this web app:
+
+
+Stores all your clients and roster status in one place.
+
+
+Controls when roster reminders and follow ups go out.
+
+
+Sends emails directly from your Plexus account.
+
+
+Logs and tracks every email and roster.
+
+
+Runs on its own schedule without Make.com.
+
+
+If you want next step, I can:
+
+
+Give you a full file tree and
+
+
+Start writing real, copy-pasteable code for main.py, models.py, scheduler.py, email_utils.py, plus 1–2 Jinja templates to get the UI live.
+
