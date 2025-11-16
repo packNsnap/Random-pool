@@ -14,7 +14,7 @@ import io
 from typing import Optional
 
 from database import get_db, init_db
-from models import User, Client, Roster, EmailTemplate, EmailLog, Settings, Attachment, RosterEntry
+from models import User, Client, Roster, EmailTemplate, EmailLog, Settings, Attachment, RosterEntry, CCEmail
 from auth import authenticate_user, require_login, get_current_user, hash_password
 from email_service import EmailService
 from scheduler import start_scheduler
@@ -604,6 +604,44 @@ async def delete_attachment(
         os.remove(file_path)
     
     db.delete(attachment)
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
+@app.post("/clients/{client_id}/cc_emails")
+async def add_cc_email(
+    client_id: int,
+    email: str = Form(...),
+    name: Optional[str] = Form(None),
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    cc_email = CCEmail(
+        client_id=client_id,
+        email=email.strip(),
+        name=name.strip() if name else None
+    )
+    db.add(cc_email)
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
+@app.post("/cc_emails/{cc_email_id}/delete")
+async def delete_cc_email(
+    cc_email_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    cc_email = db.query(CCEmail).filter(CCEmail.id == cc_email_id).first()
+    if not cc_email:
+        raise HTTPException(status_code=404, detail="CC email not found")
+    
+    client_id = cc_email.client_id
+    db.delete(cc_email)
     db.commit()
     
     return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
