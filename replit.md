@@ -14,8 +14,10 @@ A Python-based client communication management system for automating quarterly r
 - User authentication system
 - Client and contact management
 - **CSV Roster Management** - Upload roster CSV files to import employee data
+- **Roster Version Control** - Delete entire roster versions when no longer needed
 - **Three-State Testing Status** - Track employees as tested/not tested/excused with dates
 - **Roster Entry Management** - View and manage individual roster entries per client with status cycling
+- **Manual Employee Management** - Add or remove individual employees from rosters directly
 - **Client-specific attachment management** - Upload passports, certifications, and other documents (max 3MB per file)
 - **Attachment categorization** - Separate attachments for roster requests, reminders, updates, and quarterly selections
 - Automated attachment inclusion in category-specific emails
@@ -81,6 +83,11 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{report_date}}` - Report generation date
 
 ## Recent Changes
+- 2025-11-16: Roster Management Enhancements
+  - **Delete Roster Versions**: Added delete button in roster management section to remove entire rosters
+  - **Manual Employee Add**: Add individual employees to existing rosters via modal form
+  - **Manual Employee Remove**: Delete individual employees from rosters with confirmation
+  - **Improved UI**: Streamlined action buttons in roster view with icon-only buttons
 - 2025-11-16: CC Email Support Implementation
   - **CCEmail Database Model**: Store multiple CC email addresses per client with optional names
   - **Automatic Inclusion**: CC recipients automatically included in all automated emails (roster requests, reminders, updates, quarterly selections, testing reports)
