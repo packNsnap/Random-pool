@@ -17,8 +17,9 @@ A Python-based client communication management system for automating quarterly r
 - **Three-State Testing Status** - Track employees as tested/not tested/excused with dates
 - **Roster Entry Management** - View and manage individual roster entries per client with status cycling
 - **Client-specific attachment management** - Upload passports, certifications, and other documents (max 3MB per file)
-- **Attachment categorization** - Separate attachments for roster requests, reminders, and updates
+- **Attachment categorization** - Separate attachments for roster requests, reminders, updates, and quarterly selections
 - Automated attachment inclusion in category-specific emails
+- **Quarterly Selections Quick Action** - Send random pool quarterly selection emails with multiple attachments
 - **Weekly Testing Reports** - Automated email reports showing tested vs not tested employees
 - Email template management with placeholders
 - Configurable email provider (Gmail/Outlook)
@@ -79,6 +80,11 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{report_date}}` - Report generation date
 
 ## Recent Changes
+- 2025-11-16: Quarterly selections quick action added
+  - **New Email Type**: Quarterly Selections email template with roster metrics
+  - **Quick Action Button**: Send quarterly selections with multiple attachments
+  - **New Attachment Category**: quarterly_selections for organizing selection documents
+  - **Email Placeholders**: {{quarter}}, {{roster_quarter}}, {{total_employees}}, {{tested_count}}, {{not_tested_count}}, {{excused_count}}, {{send_date}}
 - 2025-11-16: Three-state testing status implementation
   - **Excused Status Added**: Employees can now be marked as tested/not tested/excused
   - **Status Cycling**: Click to cycle through all three statuses (not tested → tested → excused → repeat)
