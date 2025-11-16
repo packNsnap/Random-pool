@@ -161,8 +161,10 @@
                                         <span class="badge bg-warning">Reminder</span>
                                     {% elif attachment.category == 'update' %}
                                         <span class="badge bg-info">Update</span>
+                                    {% elif attachment.category == 'quarterly_selections' %}
+                                        <span class="badge bg-secondary">Quarterly Selections</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">{{ attachment.category }}</span>
+                                        <span class="badge bg-dark">{{ attachment.category }}</span>
                                     {% endif %}
                                 </td>
                                 <td>{{ attachment.original_filename }}</td>
@@ -333,6 +335,7 @@
                             <option value="roster_request">Roster Request</option>
                             <option value="reminder">Email Reminder</option>
                             <option value="update">Roster Update</option>
+                            <option value="quarterly_selections">Quarterly Selections</option>
                         </select>
                         <small class="text-muted">Select which type of email this attachment will be sent with.</small>
                     </div>
