@@ -38,7 +38,7 @@ If you have any questions or need assistance, please don't hesitate to reach out
 Thank you for your prompt attention to this matter.
 
 Best regards,
-Pool Comms Team""",
+Random Pool Management Team""",
             template_type="roster_request",
             active=True
         )
@@ -60,7 +60,7 @@ Please submit your roster at your earliest convenience to ensure compliance.
 If you have already submitted it, please disregard this message. If you're experiencing any issues, please contact us.
 
 Thank you,
-Pool Comms Team""",
+Random Pool Management Team""",
             template_type="follow_up",
             active=True
         )
@@ -98,7 +98,7 @@ If you have any questions or concerns about the testing status, please contact u
 Next scheduled update: In 14 days
 
 Best regards,
-Pool Comms Team""",
+Random Pool Management Team""",
             template_type="progress_update",
             active=True
         )

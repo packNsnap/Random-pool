@@ -1,4 +1,4 @@
-# Random Pool Comms Console
+# Random Pool Management
 
 ## Overview
 A Python-based client communication management system for automating quarterly roster requests and biweekly progress updates with email scheduling and tracking.
