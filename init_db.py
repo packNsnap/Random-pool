@@ -75,12 +75,25 @@ Pool Comms Team""",
 
 This is your biweekly progress update for {{client_name}}.
 
-Current Status:
-- Program is running smoothly
-- All testing procedures are being followed
-- Compliance documentation is up to date
+ROSTER TESTING STATUS (Quarter: {{roster_quarter}}):
+-------------------------------------------------
+Total Employees in Pool: {{total_employees}}
+Tested: {{tested_count}} ({{tested_percentage}}%)
+Not Tested: {{not_tested_count}}
+Excused: {{excused_count}}
 
-If you have any questions or concerns, please contact us.
+EMPLOYEES WHO HAVE TESTED:
+{{tested_list}}
+
+EMPLOYEES NOT YET TESTED:
+{{not_tested_list}}
+
+EXCUSED EMPLOYEES:
+{{excused_list}}
+
+Please find the attached CSV file with complete roster details including employee names, IDs, positions, departments, and current testing status.
+
+If you have any questions or concerns about the testing status, please contact us.
 
 Next scheduled update: In 14 days
 

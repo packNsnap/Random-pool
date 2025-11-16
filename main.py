@@ -380,12 +380,15 @@ async def send_template_email(
         not_tested_list = "\n".join([f"- {e.employee_name} ({e.employee_id or 'No ID'})" for e in not_tested_entries]) if not_tested_entries else "None"
         excused_list = "\n".join([f"- {e.employee_name} ({e.employee_id or 'No ID'})" for e in excused_entries]) if excused_entries else "None"
         
+        tested_percentage = round((tested_count / len(roster.entries) * 100), 1) if len(roster.entries) > 0 else 0
+        
         variables.update({
             "roster_quarter": roster.quarter,
             "total_employees": len(roster.entries),
             "tested_count": tested_count,
             "not_tested_count": not_tested_count,
             "excused_count": excused_count,
+            "tested_percentage": tested_percentage,
             "tested_list": tested_list,
             "not_tested_list": not_tested_list,
             "excused_list": excused_list
