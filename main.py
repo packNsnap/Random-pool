@@ -119,11 +119,11 @@ async def create_client(
     contact_email: str = Form(...),
     program_type: str = Form("DOT"),
     progress_frequency_days: int = Form(14),
-    reminder_enabled: bool = Form(True),
+    reminder_enabled: Optional[str] = Form(None),
     reminder_frequency_days: int = Form(7),
-    testing_report_enabled: bool = Form(True),
+    testing_report_enabled: Optional[str] = Form(None),
     testing_report_day_of_week: int = Form(1),
-    active: bool = Form(True),
+    active: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     user: User = Depends(require_login),
     db: Session = Depends(get_db)
@@ -134,11 +134,11 @@ async def create_client(
         contact_email=contact_email,
         program_type=program_type,
         progress_frequency_days=progress_frequency_days,
-        reminder_enabled=reminder_enabled,
+        reminder_enabled=reminder_enabled == "true",
         reminder_frequency_days=reminder_frequency_days,
-        testing_report_enabled=testing_report_enabled,
+        testing_report_enabled=testing_report_enabled == "true",
         testing_report_day_of_week=testing_report_day_of_week,
-        active=active,
+        active=active == "true",
         notes=notes
     )
     db.add(client)
@@ -194,11 +194,11 @@ async def update_client(
     contact_email: str = Form(...),
     program_type: str = Form("DOT"),
     progress_frequency_days: int = Form(14),
-    reminder_enabled: bool = Form(True),
+    reminder_enabled: Optional[str] = Form(None),
     reminder_frequency_days: int = Form(7),
-    testing_report_enabled: bool = Form(True),
+    testing_report_enabled: Optional[str] = Form(None),
     testing_report_day_of_week: int = Form(1),
-    active: bool = Form(True),
+    active: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     user: User = Depends(require_login),
     db: Session = Depends(get_db)
@@ -212,11 +212,11 @@ async def update_client(
     client.contact_email = contact_email
     client.program_type = program_type
     client.progress_frequency_days = progress_frequency_days
-    client.reminder_enabled = reminder_enabled
+    client.reminder_enabled = reminder_enabled == "true"
     client.reminder_frequency_days = reminder_frequency_days
-    client.testing_report_enabled = testing_report_enabled
+    client.testing_report_enabled = testing_report_enabled == "true"
     client.testing_report_day_of_week = testing_report_day_of_week
-    client.active = active
+    client.active = active == "true"
     client.notes = notes
     db.commit()
     
@@ -410,7 +410,13 @@ async def upload_roster_csv(
     
     entries_added = 0
     for row in csv_reader:
-        employee_name = row.get('employee_name') or row.get('name') or row.get('Name') or row.get('Employee Name')
+        normalized_row = {k.lower().strip().replace(' ', '_'): v for k, v in row.items() if v}
+        
+        employee_name = (normalized_row.get('employee_name') or 
+                        normalized_row.get('name') or 
+                        normalized_row.get('full_name') or 
+                        normalized_row.get('employee'))
+        
         if not employee_name:
             continue
         
@@ -418,9 +424,14 @@ async def upload_roster_csv(
             roster_id=roster.id,
             client_id=client_id,
             employee_name=employee_name,
-            employee_id=row.get('employee_id') or row.get('ID') or row.get('Employee ID'),
-            position=row.get('position') or row.get('Position') or row.get('Job Title'),
-            department=row.get('department') or row.get('Department'),
+            employee_id=(normalized_row.get('employee_id') or 
+                        normalized_row.get('id') or 
+                        normalized_row.get('emp_id')),
+            position=(normalized_row.get('position') or 
+                     normalized_row.get('job_title') or 
+                     normalized_row.get('title')),
+            department=(normalized_row.get('department') or 
+                       normalized_row.get('dept')),
             has_tested=False
         )
         db.add(entry)
