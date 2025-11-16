@@ -96,9 +96,17 @@
                 </form>
                 {% endfor %}
                 
-                <button type="button" class="btn btn-success w-100 mt-2" data-bs-toggle="modal" data-bs-target="#markRosterModal">
-                    <i class="bi bi-check-circle"></i> Mark Roster as Received
-                </button>
+                <form method="post" action="/clients/{{ client.id }}/toggle_roster_received" class="mt-2">
+                    {% if client.last_roster_received_at %}
+                    <button type="submit" class="btn btn-outline-danger w-100">
+                        <i class="bi bi-x-circle"></i> Mark Roster as Not Received
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-check-circle"></i> Mark Roster as Received
+                    </button>
+                    {% endif %}
+                </form>
             </div>
         </div>
         
@@ -114,7 +122,14 @@
                     </tr>
                     <tr>
                         <th>Last Roster Received:</th>
-                        <td>{{ client.last_roster_received_at|format_datetime }}</td>
+                        <td>
+                            {{ client.last_roster_received_at|format_datetime }}
+                            {% if client.last_roster_received_at %}
+                                <span class="badge bg-success ms-2">Received</span>
+                            {% else %}
+                                <span class="badge bg-warning ms-2">Not Received</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     <tr>
                         <th>Last Progress Update:</th>

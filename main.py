@@ -576,10 +576,14 @@ async def upload_roster_csv(
     for row in csv_reader:
         normalized_row = {k.lower().strip().replace(' ', '_'): v for k, v in row.items() if v}
         
+        first_name = normalized_row.get('first_name') or ''
+        last_name = normalized_row.get('last_name') or ''
+        
         employee_name = (normalized_row.get('employee_name') or 
                         normalized_row.get('name') or 
                         normalized_row.get('full_name') or 
-                        normalized_row.get('employee'))
+                        normalized_row.get('employee') or 
+                        f"{first_name} {last_name}".strip())
         
         if not employee_name:
             continue
@@ -587,15 +591,27 @@ async def upload_roster_csv(
         entry = RosterEntry(
             roster_id=roster.id,
             client_id=client_id,
+            primary_id=normalized_row.get('primary_id'),
+            last_name=last_name or None,
+            first_name=first_name or None,
             employee_name=employee_name,
             employee_id=(normalized_row.get('employee_id') or 
                         normalized_row.get('id') or 
                         normalized_row.get('emp_id')),
+            company=normalized_row.get('company'),
             position=(normalized_row.get('position') or 
                      normalized_row.get('job_title') or 
                      normalized_row.get('title')),
             department=(normalized_row.get('department') or 
                        normalized_row.get('dept')),
+            division=normalized_row.get('division'),
+            modality=normalized_row.get('modality'),
+            location=normalized_row.get('location'),
+            supervisor_name=normalized_row.get('supervisor_name'),
+            alternate_id=normalized_row.get('alternate_id'),
+            alternate_id_type=normalized_row.get('alternate_id_type'),
+            alternate_id_2=normalized_row.get('alternate_id_2'),
+            alternate_id_2_type=normalized_row.get('alternate_id_2_type'),
             testing_status="not_tested"
         )
         db.add(entry)
@@ -606,6 +622,88 @@ async def upload_roster_csv(
     db.commit()
     
     return RedirectResponse(url=f"/clients/{client_id}/roster?roster_id={roster.id}", status_code=303)
+
+@app.post("/clients/{client_id}/toggle_roster_received")
+async def toggle_roster_received(
+    client_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    if client.last_roster_received_at:
+        client.last_roster_received_at = None
+        client.status = "Active"
+    else:
+        client.last_roster_received_at = datetime.utcnow()
+        client.status = "Roster Received"
+    
+    db.commit()
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
+@app.get("/clients/{client_id}/roster/{roster_id}/download_csv")
+async def download_roster_csv(
+    client_id: int,
+    roster_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    from fastapi.responses import StreamingResponse
+    
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    roster = db.query(Roster).filter(Roster.id == roster_id).first()
+    if not roster:
+        raise HTTPException(status_code=404, detail="Roster not found")
+    
+    entries = db.query(RosterEntry).filter(RosterEntry.roster_id == roster_id).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    writer.writerow([
+        'Primary ID', 'Last Name', 'First Name', 'Company', 'Modality', 
+        'Location', 'Division', 'Supervisor Name', 'Alternate Id', 
+        'Alternate Id Type', 'Alternate Id 2', 'Alternate Id 2 Type',
+        'Employee Name', 'Employee ID', 'Position', 'Department',
+        'Testing Status', 'Test Date'
+    ])
+    
+    for entry in entries:
+        test_date_str = entry.test_date.strftime('%Y-%m-%d') if entry.test_date else ''
+        writer.writerow([
+            entry.primary_id or '',
+            entry.last_name or '',
+            entry.first_name or '',
+            entry.company or '',
+            entry.modality or '',
+            entry.location or '',
+            entry.division or '',
+            entry.supervisor_name or '',
+            entry.alternate_id or '',
+            entry.alternate_id_type or '',
+            entry.alternate_id_2 or '',
+            entry.alternate_id_2_type or '',
+            entry.employee_name,
+            entry.employee_id or '',
+            entry.position or '',
+            entry.department or '',
+            entry.testing_status,
+            test_date_str
+        ])
+    
+    output.seek(0)
+    filename = f"{client.name}_roster_{roster.quarter}.csv".replace(' ', '_')
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 @app.post("/clients/{client_id}/attachments")
 async def upload_attachment(

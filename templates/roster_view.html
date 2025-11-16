@@ -71,9 +71,14 @@
                     Roster: {{ roster.quarter }}
                     <small class="text-muted">(Uploaded: {{ roster.received_at|format_datetime }})</small>
                 </h5>
-                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
-                    <i class="bi bi-plus-circle"></i> Add Employee
-                </button>
+                <div>
+                    <a href="/clients/{{ client.id }}/roster/{{ roster.id }}/download_csv" class="btn btn-sm btn-success me-2">
+                        <i class="bi bi-download"></i> Download CSV
+                    </a>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                        <i class="bi bi-plus-circle"></i> Add Employee
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">

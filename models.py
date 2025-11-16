@@ -61,10 +61,30 @@ class RosterEntry(Base):
     id = Column(Integer, primary_key=True, index=True)
     roster_id = Column(Integer, ForeignKey("rosters.id"), nullable=False)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
+    
+    # Basic employee info
+    primary_id = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    first_name = Column(String, nullable=True)
     employee_name = Column(String, nullable=False)
     employee_id = Column(String, nullable=True)
+    
+    # Work details
+    company = Column(String, nullable=True)
     position = Column(String, nullable=True)
     department = Column(String, nullable=True)
+    division = Column(String, nullable=True)
+    modality = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    supervisor_name = Column(String, nullable=True)
+    
+    # Alternate IDs
+    alternate_id = Column(String, nullable=True)
+    alternate_id_type = Column(String, nullable=True)
+    alternate_id_2 = Column(String, nullable=True)
+    alternate_id_2_type = Column(String, nullable=True)
+    
+    # Testing status
     testing_status = Column(String, default="not_tested", nullable=False)
     test_date = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
