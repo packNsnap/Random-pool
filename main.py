@@ -46,6 +46,11 @@ async def startup_event():
     init_db()
     start_scheduler()
 
+@app.get("/health")
+async def health_check():
+    """Fast health check endpoint for deployment verification"""
+    return {"status": "healthy"}
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
