@@ -570,7 +570,7 @@ async def upload_roster_csv(
     # Parse the file based on type
     rows = []
     if is_csv:
-        csv_data = content.decode('utf-8')
+        csv_data = content.decode('utf-8-sig')
         csv_reader = csv.DictReader(io.StringIO(csv_data))
         rows = list(csv_reader)
     else:  # XLSX
@@ -831,6 +831,39 @@ async def download_roster_xlsx(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@app.get("/templates/roster_csv")
+async def download_roster_template_csv(user: User = Depends(require_login)):
+    with open("uploads/templates/roster_template.csv", "rb") as f:
+        content = f.read()
+    
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=roster_template.csv"}
+    )
+
+@app.get("/templates/roster_xlsx")
+async def download_roster_template_xlsx(user: User = Depends(require_login)):
+    with open("uploads/templates/roster_template.xlsx", "rb") as f:
+        content = f.read()
+    
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=roster_template.xlsx"}
+    )
+
+@app.get("/templates/selections_xlsx")
+async def download_selections_template_xlsx(user: User = Depends(require_login)):
+    with open("uploads/templates/selections_template.xlsx", "rb") as f:
+        content = f.read()
+    
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=selections_template.xlsx"}
     )
 
 @app.post("/clients/{client_id}/attachments")

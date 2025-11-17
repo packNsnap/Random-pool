@@ -95,10 +95,11 @@ The system supports both Gmail and Outlook/Office 365:
   - **Independent Management**: Separate sections on client detail page for viewing and managing Rosters vs Selections
   - **Type-Specific Views**: Roster view page automatically filters and displays correct type with appropriate labels
   - **Database Schema Update**: Added roster_type column to Roster model to distinguish between roster and selections entries
-- 2025-11-17: XLSX Upload Fix & Excel Export Enhancement
-  - **Fixed XLSX Parsing**: Resolved issue where XLSX uploads weren't populating data due to aggressive empty cell filtering
-  - **None Header Handling**: Improved XLSX parser to skip None/empty column headers instead of failing
-  - **Flexible Column Matching**: Enhanced field mapping to handle variations in column names and empty values
+- 2025-11-17: Upload Function Fixes & Template System
+  - **UTF-8 BOM Fix**: Fixed critical bug where CSV files with UTF-8 BOM weren't uploading (changed to utf-8-sig encoding)
+  - **XLSX Column Index Fix**: Fixed XLSX parsing to correctly handle spreadsheets with empty column headers
+  - **Download Templates**: Added template download buttons in upload modals (CSV and XLSX for rosters, XLSX for selections)
+  - **Sample Templates**: Pre-populated templates with example data and all 16 supported fields
   - **XLSX Upload**: Roster upload now accepts both CSV and XLSX (Excel) files for maximum flexibility
   - **XLSX Export**: Added Excel download option alongside CSV export with formatted headers and auto-adjusted column widths
   - **Dual Format Support**: Users can choose between CSV and XLSX for both uploading and downloading rosters
