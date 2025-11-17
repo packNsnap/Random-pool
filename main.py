@@ -156,7 +156,9 @@ async def client_detail(
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     
-    rosters = sorted(client.rosters, key=lambda r: r.received_at, reverse=True)
+    all_rosters = client.rosters
+    rosters = sorted([r for r in all_rosters if r.roster_type == "roster"], key=lambda r: r.received_at, reverse=True)
+    selections = sorted([r for r in all_rosters if r.roster_type == "selections"], key=lambda r: r.received_at, reverse=True)
     email_logs = db.query(EmailLog).filter(EmailLog.client_id == client_id).order_by(EmailLog.sent_at.desc()).limit(10).all()
     active_templates = db.query(EmailTemplate).filter(EmailTemplate.active == True).all()
     
@@ -165,6 +167,7 @@ async def client_detail(
         "user": user,
         "client": client,
         "rosters": rosters,
+        "selections": selections,
         "email_logs": email_logs,
         "current_quarter": get_current_quarter(),
         "active_templates": active_templates
