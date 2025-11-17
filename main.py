@@ -539,6 +539,7 @@ async def mark_roster_received(
 async def upload_roster_csv(
     client_id: int,
     quarter: str = Form(...),
+    roster_type: str = Form("roster"),
     file: UploadFile = File(...),
     user: User = Depends(require_login),
     db: Session = Depends(get_db)
@@ -559,7 +560,7 @@ async def upload_roster_csv(
         raise HTTPException(status_code=400, detail="Please upload a CSV or XLSX file")
     
     content = await file.read()
-    file_path = f"uploads/rosters/{client_id}_{quarter}_{file.filename}"
+    file_path = f"uploads/rosters/{client_id}_{quarter}_{roster_type}_{file.filename}"
     with open(file_path, "wb") as buffer:
         buffer.write(content)
     
@@ -572,20 +573,26 @@ async def upload_roster_csv(
     else:  # XLSX
         workbook = load_workbook(file_path)
         sheet = workbook.active
-        headers = [cell.value for cell in sheet[1]]
+        headers = [cell.value for cell in sheet[1] if cell.value is not None]
         for row in sheet.iter_rows(min_row=2, values_only=True):
-            row_dict = {headers[i]: row[i] for i in range(len(headers)) if i < len(row)}
-            rows.append(row_dict)
+            row_dict = {}
+            for i, header in enumerate(headers):
+                if i < len(row):
+                    row_dict[header] = row[i]
+            if any(row_dict.values()):
+                rows.append(row_dict)
     
     roster = db.query(Roster).filter(
         Roster.client_id == client_id,
-        Roster.quarter == quarter
+        Roster.quarter == quarter,
+        Roster.roster_type == roster_type
     ).first()
     
     if not roster:
         roster = Roster(
             client_id=client_id,
             quarter=quarter,
+            roster_type=roster_type,
             file_path=file_path
         )
         db.add(roster)
@@ -593,10 +600,10 @@ async def upload_roster_csv(
     
     entries_added = 0
     for row in rows:
-        normalized_row = {k.lower().strip().replace(' ', '_'): v for k, v in row.items() if k and v}
+        normalized_row = {k.lower().strip().replace(' ', '_'): (v if v is not None else '') for k, v in row.items() if k}
         
-        first_name = normalized_row.get('first_name') or ''
-        last_name = normalized_row.get('last_name') or ''
+        first_name = normalized_row.get('first_name', '') or ''
+        last_name = normalized_row.get('last_name', '') or ''
         
         employee_name = (normalized_row.get('employee_name') or 
                         normalized_row.get('name') or 
@@ -610,37 +617,38 @@ async def upload_roster_csv(
         entry = RosterEntry(
             roster_id=roster.id,
             client_id=client_id,
-            primary_id=normalized_row.get('primary_id'),
+            primary_id=normalized_row.get('primary_id') or None,
             last_name=last_name or None,
             first_name=first_name or None,
             employee_name=employee_name,
             employee_id=(normalized_row.get('employee_id') or 
                         normalized_row.get('id') or 
-                        normalized_row.get('emp_id')),
-            company=normalized_row.get('company'),
+                        normalized_row.get('emp_id') or None),
+            company=normalized_row.get('company') or None,
             position=(normalized_row.get('position') or 
                      normalized_row.get('job_title') or 
-                     normalized_row.get('title')),
+                     normalized_row.get('title') or None),
             department=(normalized_row.get('department') or 
-                       normalized_row.get('dept')),
-            division=normalized_row.get('division'),
-            modality=normalized_row.get('modality'),
-            location=normalized_row.get('location'),
-            supervisor_name=normalized_row.get('supervisor_name'),
-            alternate_id=normalized_row.get('alternate_id'),
-            alternate_id_type=normalized_row.get('alternate_id_type'),
-            alternate_id_2=normalized_row.get('alternate_id_2'),
-            alternate_id_2_type=normalized_row.get('alternate_id_2_type'),
+                       normalized_row.get('dept') or None),
+            division=normalized_row.get('division') or None,
+            modality=normalized_row.get('modality') or None,
+            location=normalized_row.get('location') or None,
+            supervisor_name=normalized_row.get('supervisor_name') or normalized_row.get('supervisor') or None,
+            alternate_id=normalized_row.get('alternate_id') or None,
+            alternate_id_type=normalized_row.get('alternate_id_type') or None,
+            alternate_id_2=normalized_row.get('alternate_id_2') or None,
+            alternate_id_2_type=normalized_row.get('alternate_id_2_type') or None,
             testing_status="not_tested"
         )
         db.add(entry)
         entries_added += 1
     
     client.last_roster_received_at = datetime.utcnow()
-    client.status = f"Roster Uploaded ({entries_added} entries)"
+    type_label = "Roster" if roster_type == "roster" else "Selections"
+    client.status = f"{type_label} Uploaded ({entries_added} entries)"
     db.commit()
     
-    return RedirectResponse(url=f"/clients/{client_id}/roster?roster_id={roster.id}", status_code=303)
+    return RedirectResponse(url=f"/clients/{client_id}/roster?roster_id={roster.id}&roster_type={roster_type}", status_code=303)
 
 @app.post("/clients/{client_id}/toggle_roster_received")
 async def toggle_roster_received(
