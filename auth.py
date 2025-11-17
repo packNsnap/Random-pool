@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User
+from datetime import datetime
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -17,8 +18,13 @@ def authenticate_user(db: Session, username: str, password: str):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         return None
+    if not user.active:
+        return None
     if not verify_password(password, user.password_hash):
         return None
+    
+    user.last_login_at = datetime.utcnow()
+    db.commit()
     return user
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
@@ -26,6 +32,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     if not user_id:
         return None
     user = db.query(User).filter(User.id == user_id).first()
+    if user and not user.active:
+        return None
     return user
 
 def require_login(request: Request, db: Session = Depends(get_db)):
@@ -35,5 +43,20 @@ def require_login(request: Request, db: Session = Depends(get_db)):
             status_code=status.HTTP_303_SEE_OTHER,
             detail="Not authenticated",
             headers={"Location": "/login"}
+        )
+    return user
+
+def require_admin(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_303_SEE_OTHER,
+            detail="Not authenticated",
+            headers={"Location": "/login"}
+        )
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
         )
     return user

@@ -11,8 +11,15 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
-    role = Column(String, default="admin")
+    email = Column(String, nullable=True)
+    full_name = Column(String, nullable=True)
+    role = Column(String, default="user")
+    active = Column(Boolean, default=True)
+    can_send_emails = Column(Boolean, default=False)
+    can_manage_clients = Column(Boolean, default=False)
+    can_view_reports = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_login_at = Column(DateTime, nullable=True)
 
 class Client(Base):
     __tablename__ = "clients"
