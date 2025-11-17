@@ -724,6 +724,99 @@ async def download_roster_csv(
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+@app.get("/clients/{client_id}/roster/{roster_id}/download_xlsx")
+async def download_roster_xlsx(
+    client_id: int,
+    roster_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    from fastapi.responses import StreamingResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    roster = db.query(Roster).filter(Roster.id == roster_id).first()
+    if not roster:
+        raise HTTPException(status_code=404, detail="Roster not found")
+    
+    entries = db.query(RosterEntry).filter(RosterEntry.roster_id == roster_id).all()
+    
+    # Create workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Roster"
+    
+    # Add headers with formatting
+    headers = [
+        'Primary ID', 'Last Name', 'First Name', 'Company', 'Modality', 
+        'Location', 'Division', 'Supervisor Name', 'Alternate Id', 
+        'Alternate Id Type', 'Alternate Id 2', 'Alternate Id 2 Type',
+        'Employee Name', 'Employee ID', 'Position', 'Department',
+        'Testing Status', 'Test Date'
+    ]
+    ws.append(headers)
+    
+    # Format header row
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+    
+    # Add data rows
+    for entry in entries:
+        test_date_str = entry.test_date.strftime('%Y-%m-%d') if entry.test_date else ''
+        ws.append([
+            entry.primary_id or '',
+            entry.last_name or '',
+            entry.first_name or '',
+            entry.company or '',
+            entry.modality or '',
+            entry.location or '',
+            entry.division or '',
+            entry.supervisor_name or '',
+            entry.alternate_id or '',
+            entry.alternate_id_type or '',
+            entry.alternate_id_2 or '',
+            entry.alternate_id_2_type or '',
+            entry.employee_name,
+            entry.employee_id or '',
+            entry.position or '',
+            entry.department or '',
+            entry.testing_status,
+            test_date_str
+        ])
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Save to bytes
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f"{client.name}_roster_{roster.quarter}.xlsx".replace(' ', '_')
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @app.post("/clients/{client_id}/attachments")
 async def upload_attachment(
     client_id: int,
