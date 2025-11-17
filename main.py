@@ -358,7 +358,20 @@ async def send_template_email(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    roster = db.query(Roster).filter(Roster.client_id == client_id).order_by(Roster.received_at.desc()).first()
+    roster_type_needed = None
+    if template.template_type in ["roster_request", "reminder"]:
+        roster_type_needed = "roster"
+    elif template.template_type in ["progress_update", "testing_report"]:
+        roster_type_needed = "selections"
+    
+    roster = None
+    if roster_type_needed:
+        roster = db.query(Roster).filter(
+            Roster.client_id == client_id,
+            Roster.roster_type == roster_type_needed
+        ).order_by(Roster.received_at.desc()).first()
+    else:
+        roster = db.query(Roster).filter(Roster.client_id == client_id).order_by(Roster.received_at.desc()).first()
     
     variables = {
         "client_name": client.name,
@@ -370,7 +383,7 @@ async def send_template_email(
         "send_date": format_datetime(datetime.utcnow())
     }
     
-    if roster:
+    if roster and template.template_type in ["progress_update", "testing_report"]:
         tested_entries = [e for e in roster.entries if e.testing_status == "tested"]
         not_tested_entries = [e for e in roster.entries if e.testing_status == "not_tested"]
         excused_entries = [e for e in roster.entries if e.testing_status == "excused"]
@@ -396,6 +409,11 @@ async def send_template_email(
             "not_tested_list": not_tested_list,
             "excused_list": excused_list
         })
+    elif roster and template.template_type in ["roster_request", "reminder"]:
+        variables.update({
+            "roster_quarter": roster.quarter,
+            "total_employees": len(roster.entries)
+        })
     
     attachment_paths = []
     if template.template_type:
@@ -405,8 +423,35 @@ async def send_template_email(
         ).all()
         attachment_paths = [os.path.join("uploads", "attachments", a.filename) for a in attachments]
     
-    if template.template_type == "progress_update" and roster:
-        csv_filename = f"{client.name.replace(' ', '_')}_roster_status_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+    csv_path = None
+    if template.template_type in ["roster_request", "reminder"] and roster:
+        csv_filename = f"{client.name.replace(' ', '_')}_roster_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+        csv_path = os.path.join("uploads", "temp", csv_filename)
+        os.makedirs("uploads/temp", exist_ok=True)
+        
+        with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['Employee Name', 'Employee ID', 'Position', 'Department', 'Primary ID', 'Last Name', 'First Name', 'Company', 'Modality', 'Location', 'Division', 'Supervisor Name'])
+            
+            for entry in roster.entries:
+                writer.writerow([
+                    entry.employee_name,
+                    entry.employee_id or '',
+                    entry.position or '',
+                    entry.department or '',
+                    entry.primary_id or '',
+                    entry.last_name or '',
+                    entry.first_name or '',
+                    entry.company or '',
+                    entry.modality or '',
+                    entry.location or '',
+                    entry.division or '',
+                    entry.supervisor_name or ''
+                ])
+        
+        attachment_paths.append(csv_path)
+    elif template.template_type in ["progress_update", "testing_report"] and roster:
+        csv_filename = f"{client.name.replace(' ', '_')}_selections_status_{datetime.utcnow().strftime('%Y%m%d')}.csv"
         csv_path = os.path.join("uploads", "temp", csv_filename)
         os.makedirs("uploads/temp", exist_ok=True)
         
@@ -429,9 +474,8 @@ async def send_template_email(
     email_service = EmailService(db)
     success, message = email_service.send_from_template(client, template, variables, attachment_paths)
     
-    if template.template_type == "progress_update" and roster:
-        if os.path.exists(csv_path):
-            os.remove(csv_path)
+    if csv_path and os.path.exists(csv_path):
+        os.remove(csv_path)
     
     if success:
         if template.template_type == "roster_request":

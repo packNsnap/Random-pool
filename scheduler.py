@@ -208,7 +208,8 @@ def send_weekly_testing_reports():
         
         for client in active_clients:
             latest_roster = db.query(Roster).filter(
-                Roster.client_id == client.id
+                Roster.client_id == client.id,
+                Roster.roster_type == "selections"
             ).order_by(Roster.received_at.desc()).first()
             
             if not latest_roster:
@@ -258,11 +259,34 @@ def send_weekly_testing_reports():
                 "report_date": datetime.utcnow().strftime("%B %d, %Y")
             }
             
+            csv_filename = f"{client.name.replace(' ', '_')}_testing_report_{datetime.utcnow().strftime('%Y%m%d')}.csv"
+            csv_path = os.path.join("uploads", "temp", csv_filename)
+            os.makedirs("uploads/temp", exist_ok=True)
+            
+            import csv
+            with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['Employee Name', 'Employee ID', 'Position', 'Department', 'Testing Status', 'Test Date'])
+                
+                for entry in entries:
+                    writer.writerow([
+                        entry.employee_name,
+                        entry.employee_id or '',
+                        entry.position or '',
+                        entry.department or '',
+                        entry.testing_status,
+                        entry.test_date.strftime('%Y-%m-%d %H:%M') if entry.test_date else ''
+                    ])
+            
             success, message = email_service.send_from_template(
                 client=client,
                 template=template,
-                variables=variables
+                variables=variables,
+                attachments=[csv_path]
             )
+            
+            if os.path.exists(csv_path):
+                os.remove(csv_path)
             
             if success:
                 logger.info(f"Sent weekly testing report to {client.name}")
