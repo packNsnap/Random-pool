@@ -89,11 +89,19 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{report_date}}` - Report generation date
 
 ## Recent Changes
-- 2025-11-17: Excel (XLSX) Support Added
+- 2025-11-17: Separate Roster and Selections Management
+  - **Roster Type Separation**: Each client can now maintain completely separate "Roster" and "Selections" spreadsheets
+  - **Dual Upload Modals**: Dedicated upload buttons for Rosters and Selections with distinct color coding (blue for rosters, yellow/warning for selections)
+  - **Independent Management**: Separate sections on client detail page for viewing and managing Rosters vs Selections
+  - **Type-Specific Views**: Roster view page automatically filters and displays correct type with appropriate labels
+  - **Database Schema Update**: Added roster_type column to Roster model to distinguish between roster and selections entries
+- 2025-11-17: XLSX Upload Fix & Excel Export Enhancement
+  - **Fixed XLSX Parsing**: Resolved issue where XLSX uploads weren't populating data due to aggressive empty cell filtering
+  - **None Header Handling**: Improved XLSX parser to skip None/empty column headers instead of failing
+  - **Flexible Column Matching**: Enhanced field mapping to handle variations in column names and empty values
   - **XLSX Upload**: Roster upload now accepts both CSV and XLSX (Excel) files for maximum flexibility
   - **XLSX Export**: Added Excel download option alongside CSV export with formatted headers and auto-adjusted column widths
   - **Dual Format Support**: Users can choose between CSV and XLSX for both uploading and downloading rosters
-  - **Enhanced File Parsing**: Smart detection of file type with appropriate parsing for each format
 - 2025-11-16: Enhanced Roster Management Features
   - **Roster Status Toggle**: Added quick toggle button on client detail page to mark roster as received/not received with visual indicators
   - **Multi-Format Export**: Download buttons on roster view export complete roster data with all 18 fields including Primary ID, Last Name, First Name, Company, Modality, Location, Division, Supervisor Name, Alternate IDs, testing status, and test dates
