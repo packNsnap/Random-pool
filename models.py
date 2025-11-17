@@ -48,6 +48,7 @@ class Roster(Base):
     id = Column(Integer, primary_key=True, index=True)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
     quarter = Column(String, nullable=False)
+    roster_type = Column(String, default="roster", nullable=False)
     received_at = Column(DateTime, default=datetime.utcnow)
     file_path = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
