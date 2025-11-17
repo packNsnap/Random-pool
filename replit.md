@@ -36,6 +36,16 @@ Key architectural decisions and features include:
 - **SQLAlchemy**: ORM for database interaction.
 
 ## Recent Changes
+- 2025-11-17: Dashboard Overhaul - Executive Command Center (Production Ready)
+  - **KPI Metrics Cards**: 4 modern cards showing Active Clients, Pending Rosters, Testing Completion %, and Overdue Items
+  - **Smart Action Items**: Urgent (red, 21+ days) and Warning (yellow, 14-21 days or <50% testing) alerts with inline client links
+  - **Visual Analytics**: Chart.js doughnut chart displaying testing progress with tested vs. pending breakdown
+  - **Enhanced Client Table**: Color-coded rows (red/yellow for overdue), progress bars for testing completion, inline actions
+  - **Recent Activity Feed**: Last 10 email logs with status badges and timestamps
+  - **Upcoming Automations**: Shows 5 enabled schedules sorted by least recently sent (displays frequencies and client names)
+  - **Roster Detection Fix**: Pending rosters now correctly filters by roster_type="roster" only (selections don't count)
+  - **Responsive Design**: Bootstrap 5 with shadow effects, proper spacing, mobile-friendly layout
+  - **Balanced UX**: Quick visibility into urgent items while maintaining detailed client overview table
 - 2025-11-17: User Management & Role-Based Access Control (Production Ready)
   - **User Roles**: Admin and regular user roles with distinct permissions
   - **Granular Permissions**: can_send_emails, can_manage_clients, can_view_reports flags for fine-grained access control
