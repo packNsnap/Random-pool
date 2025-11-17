@@ -89,6 +89,12 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{report_date}}` - Report generation date
 
 ## Recent Changes
+- 2025-11-17: Simplified Roster View (Reference-Only Mode)
+  - **Roster Section**: Now displays employee lists without testing tracking - clean reference data only
+  - **Selections Section**: Contains all testing status features (tested/not tested/excused, stats cards, progress tracking)
+  - **Conditional UI**: Template automatically shows/hides testing features based on roster_type
+  - **Preserved CRUD**: Both sections maintain Add Employee and Delete Employee functionality
+  - **Report Separation**: Weekly testing reports and progress updates only pull data from Selections
 - 2025-11-17: Separate Roster and Selections Management
   - **Roster Type Separation**: Each client can now maintain completely separate "Roster" and "Selections" spreadsheets
   - **Dual Upload Modals**: Dedicated upload buttons for Rosters and Selections with distinct color coding (blue for rosters, yellow/warning for selections)
