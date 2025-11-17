@@ -11,6 +11,8 @@ import uuid
 import re
 import csv
 import io
+import asyncio
+from contextlib import asynccontextmanager
 from typing import Optional, List
 
 from database import get_db, init_db
@@ -20,7 +22,24 @@ from email_service import EmailService
 from scheduler import start_scheduler
 from utils import get_current_quarter, format_datetime, days_since, render_template_string
 
-app = FastAPI(title="Random Pool Management")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events"""
+    # Startup: Initialize DB and defer scheduler startup
+    init_db()
+    
+    # Start scheduler in background after a short delay to allow app to start
+    async def delayed_scheduler_start():
+        await asyncio.sleep(2)
+        start_scheduler()
+    
+    asyncio.create_task(delayed_scheduler_start())
+    
+    yield
+    
+    # Shutdown: cleanup if needed
+
+app = FastAPI(title="Random Pool Management", lifespan=lifespan)
 
 SESSION_SECRET = os.getenv("SESSION_SECRET")
 if not SESSION_SECRET:
@@ -41,15 +60,10 @@ try:
 except Exception:
     pass
 
-@app.on_event("startup")
-async def startup_event():
-    init_db()
-    start_scheduler()
-
 @app.get("/health")
 async def health_check():
     """Fast health check endpoint for deployment verification"""
-    return {"status": "healthy"}
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
