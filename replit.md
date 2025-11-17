@@ -37,6 +37,11 @@ Key architectural decisions and features include:
 - **SQLAlchemy**: ORM for database interaction.
 
 ## Recent Changes
+- 2025-11-17: Navigation Fix - Dashboard Header Links (Production Ready)
+  - **Fixed Header Navigation**: Updated navbar brand and Dashboard menu link to point to `/dashboard` instead of `/` (health check endpoint)
+  - **Correct Routing**: Application interface is at `/dashboard`, health checks at `/` return JSON only
+  - **User Experience**: Clicking "Dashboard" or brand logo now keeps users on the dashboard page instead of redirecting to health check
+  - **Files Updated**: templates/base.html (lines 21 and 30)
 - 2025-11-17: Deployment Health Check Architecture (Production Ready)
   - **Clean Endpoint Separation**: `/` (health check only, always 200 JSON) and `/dashboard` (authenticated application interface)
   - **Database-Free Health Checks**: Root endpoint never touches database - works even when database is unavailable
