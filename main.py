@@ -576,13 +576,18 @@ async def upload_roster_csv(
     else:  # XLSX
         workbook = load_workbook(file_path)
         sheet = workbook.active
-        headers = [cell.value for cell in sheet[1] if cell.value is not None]
+        
+        # Get headers with their original column indices
+        header_row = sheet[1]
+        headers_with_indices = [(i, cell.value) for i, cell in enumerate(header_row) if cell.value is not None]
+        
         for row in sheet.iter_rows(min_row=2, values_only=True):
             row_dict = {}
-            for i, header in enumerate(headers):
-                if i < len(row):
-                    row_dict[header] = row[i]
-            if any(row_dict.values()):
+            for col_idx, header in headers_with_indices:
+                if col_idx < len(row):
+                    row_dict[header] = row[col_idx]
+            # Only add row if it has at least one non-empty value
+            if any(v for v in row_dict.values() if v is not None and str(v).strip()):
                 rows.append(row_dict)
     
     roster = db.query(Roster).filter(
