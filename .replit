@@ -34,14 +34,10 @@ externalPort = 80
 localPort = 36569
 externalPort = 3000
 
-[[ports]]
-localPort = 46249
-externalPort = 3001
-
 [nix]
 channel = "stable-25_05"
 packages = ["cargo", "libiconv", "rustc"]
 
 [deployment]
-deploymentTarget = "cloudrun"
-run = ["sh", "-c", "/nix/store/cn7gx98bvd6qj3jrh5v21q868nlv2jv6-python3-wrapper/bin/python3 $file"]
+deploymentTarget = "vm"
+run = ["gunicorn", "main:app", "--workers", "2", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:5000"]
