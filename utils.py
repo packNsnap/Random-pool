@@ -1,7 +1,7 @@
 from datetime import datetime, date, timedelta
 import re
 
-def get_current_quarter(today: date = None) -> str:
+def get_current_quarter(today: date | None = None) -> str:
     if today is None:
         today = date.today()
     year = today.year
@@ -34,13 +34,13 @@ def render_template_string(template: str, variables: dict) -> str:
         result = result.replace(placeholder, str(value))
     return result
 
-def days_since(dt: datetime) -> int:
+def days_since(dt: datetime | None) -> int | None:
     if dt is None:
         return None
     delta = datetime.utcnow() - dt
     return delta.days
 
-def format_datetime(dt: datetime, format_str: str = "%Y-%m-%d %H:%M") -> str:
+def format_datetime(dt: datetime | None, format_str: str = "%Y-%m-%d %H:%M") -> str:
     if dt is None:
         return "Never"
     return dt.strftime(format_str)

@@ -445,8 +445,10 @@ async def update_automation_settings(
         interval_value_key = f"{template_type}_interval_value"
         
         enabled = form_data.get(enabled_key) == "true"
-        interval_type = form_data.get(interval_type_key, "weekly")
-        interval_value = form_data.get(interval_value_key)
+        interval_type_raw = form_data.get(interval_type_key, "weekly")
+        interval_type = str(interval_type_raw) if interval_type_raw else "weekly"
+        interval_value_raw = form_data.get(interval_value_key)
+        interval_value_str = str(interval_value_raw) if interval_value_raw and not isinstance(interval_value_raw, type(None)) else None
         
         schedule = db.query(ClientTemplateSchedule).filter(
             ClientTemplateSchedule.client_id == client_id,
@@ -456,14 +458,14 @@ async def update_automation_settings(
         if schedule:
             schedule.enabled = enabled
             schedule.interval_type = interval_type
-            schedule.interval_value = int(interval_value) if interval_value and interval_value.isdigit() else None
+            schedule.interval_value = int(interval_value_str) if interval_value_str and interval_value_str.isdigit() else None
         else:
             schedule = ClientTemplateSchedule(
                 client_id=client_id,
                 template_type=template_type,
                 enabled=enabled,
                 interval_type=interval_type,
-                interval_value=int(interval_value) if interval_value and interval_value.isdigit() else None
+                interval_value=int(interval_value_str) if interval_value_str and interval_value_str.isdigit() else None
             )
             db.add(schedule)
     
@@ -862,8 +864,12 @@ async def upload_roster_csv(
         csv_reader = csv.DictReader(io.StringIO(csv_data))
         rows = list(csv_reader)
     else:  # XLSX
+        from openpyxl.worksheet.worksheet import Worksheet
         workbook = load_workbook(file_path)
         sheet = workbook.active
+        if sheet is None:
+            raise HTTPException(status_code=400, detail="Invalid Excel file: no active sheet")
+        assert isinstance(sheet, Worksheet)
         
         # Get headers with their original column indices
         header_row = sheet[1]
@@ -1050,8 +1056,12 @@ async def download_roster_xlsx(
     entries = db.query(RosterEntry).filter(RosterEntry.roster_id == roster_id).all()
     
     # Create workbook
+    from openpyxl.worksheet.worksheet import Worksheet
     wb = Workbook()
     ws = wb.active
+    if ws is None:
+        raise HTTPException(status_code=500, detail="Failed to create worksheet")
+    assert isinstance(ws, Worksheet)
     ws.title = "Roster"
     
     # Add headers with formatting
