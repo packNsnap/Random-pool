@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Depends, Form, UploadFile, File, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
@@ -28,10 +28,10 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize DB and defer scheduler startup
     init_db()
     
-    # Start scheduler in background after a short delay to allow app to start
+    # Start scheduler in background thread to prevent blocking event loop
     async def delayed_scheduler_start():
-        await asyncio.sleep(2)
-        start_scheduler()
+        await asyncio.sleep(5)
+        await asyncio.to_thread(start_scheduler)
     
     asyncio.create_task(delayed_scheduler_start())
     
@@ -65,8 +65,19 @@ async def health_check():
     """Fast health check endpoint for deployment verification"""
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
+@app.head("/")
+async def root_head():
+    """Fast health check for HEAD requests"""
+    return Response(status_code=200, headers={"Content-Type": "application/json"})
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
+    # Return 200 JSON for non-browser Accept headers (deployment health checks)
+    # This allows deployment health checks to pass while keeping browser flow intact
+    accept_header = request.headers.get("accept", "")
+    if accept_header and "text/html" not in accept_header:
+        return JSONResponse({"status": "ok", "auth": "required"}, status_code=200)
+    
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse(url="/login", status_code=303)

@@ -363,7 +363,7 @@ def send_weekly_testing_reports():
         db.close()
 
 def start_scheduler():
-    scheduler = BackgroundScheduler()
+    scheduler = BackgroundScheduler(timezone="UTC")
     
     scheduler.add_job(
         func=check_and_send_roster_reminders,
