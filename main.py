@@ -55,22 +55,113 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     clients = db.query(Client).filter(Client.active == True).all()
     current_quarter = get_current_quarter()
     
+    total_active_clients = len(clients)
+    pending_rosters = 0
+    overdue_items = 0
+    total_tested = 0
+    total_employees = 0
+    
+    urgent_actions = []
+    warning_actions = []
+    
     client_data = []
     for client in clients:
         roster_received = any(r.quarter == current_quarter for r in client.rosters)
         days_last_contact = days_since(client.last_roster_request_at)
         
+        if not roster_received:
+            pending_rosters += 1
+        
+        if days_last_contact and days_last_contact > 14:
+            overdue_items += 1
+            if days_last_contact > 21:
+                urgent_actions.append({
+                    "type": "overdue_roster",
+                    "client": client,
+                    "days": days_last_contact,
+                    "message": f"{client.name} - No contact for {days_last_contact} days"
+                })
+            elif days_last_contact > 14:
+                warning_actions.append({
+                    "type": "follow_up_needed",
+                    "client": client,
+                    "days": days_last_contact,
+                    "message": f"{client.name} - Follow-up needed ({days_last_contact} days)"
+                })
+        
+        latest_selection = db.query(Roster).filter(
+            Roster.client_id == client.id,
+            Roster.roster_type == "selections"
+        ).order_by(Roster.received_at.desc()).first()
+        
+        testing_progress = 0
+        tested_count = 0
+        not_tested_count = 0
+        excused_count = 0
+        employee_count = 0
+        
+        if latest_selection and latest_selection.entries:
+            employee_count = len(latest_selection.entries)
+            tested_count = sum(1 for e in latest_selection.entries if e.testing_status == "tested")
+            not_tested_count = sum(1 for e in latest_selection.entries if e.testing_status == "not_tested")
+            excused_count = sum(1 for e in latest_selection.entries if e.testing_status == "excused")
+            
+            if employee_count > 0:
+                testing_progress = round((tested_count / employee_count) * 100)
+            
+            total_tested += tested_count
+            total_employees += employee_count
+            
+            if employee_count > 0 and testing_progress < 50:
+                warning_actions.append({
+                    "type": "low_testing_progress",
+                    "client": client,
+                    "progress": testing_progress,
+                    "message": f"{client.name} - Testing only {testing_progress}% complete"
+                })
+        
         client_data.append({
             "client": client,
             "roster_received": roster_received,
-            "days_last_contact": days_last_contact
+            "days_last_contact": days_last_contact,
+            "testing_progress": testing_progress,
+            "tested_count": tested_count,
+            "not_tested_count": not_tested_count,
+            "excused_count": excused_count,
+            "employee_count": employee_count
         })
+    
+    testing_completion = round((total_tested / total_employees * 100)) if total_employees > 0 else 0
+    
+    recent_activity = db.query(EmailLog).order_by(EmailLog.sent_at.desc()).limit(10).all()
+    
+    upcoming_schedules = []
+    for client in clients[:5]:
+        schedules = db.query(ClientTemplateSchedule).filter(
+            ClientTemplateSchedule.client_id == client.id,
+            ClientTemplateSchedule.enabled == True
+        ).all()
+        for schedule in schedules:
+            upcoming_schedules.append({
+                "client": client,
+                "schedule": schedule
+            })
     
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "user": user,
         "client_data": client_data,
-        "current_quarter": current_quarter
+        "current_quarter": current_quarter,
+        "total_active_clients": total_active_clients,
+        "pending_rosters": pending_rosters,
+        "testing_completion": testing_completion,
+        "overdue_items": overdue_items,
+        "urgent_actions": urgent_actions,
+        "warning_actions": warning_actions,
+        "recent_activity": recent_activity,
+        "upcoming_schedules": upcoming_schedules[:5],
+        "total_tested": total_tested,
+        "total_employees": total_employees
     })
 
 @app.get("/login", response_class=HTMLResponse)
