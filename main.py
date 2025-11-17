@@ -835,6 +835,8 @@ async def download_roster_xlsx(
 
 @app.get("/templates/roster_csv")
 async def download_roster_template_csv(user: User = Depends(require_login)):
+    from fastapi.responses import StreamingResponse
+    
     with open("uploads/templates/roster_template.csv", "rb") as f:
         content = f.read()
     
@@ -846,6 +848,8 @@ async def download_roster_template_csv(user: User = Depends(require_login)):
 
 @app.get("/templates/roster_xlsx")
 async def download_roster_template_xlsx(user: User = Depends(require_login)):
+    from fastapi.responses import StreamingResponse
+    
     with open("uploads/templates/roster_template.xlsx", "rb") as f:
         content = f.read()
     
@@ -857,6 +861,8 @@ async def download_roster_template_xlsx(user: User = Depends(require_login)):
 
 @app.get("/templates/selections_xlsx")
 async def download_selections_template_xlsx(user: User = Depends(require_login)):
+    from fastapi.responses import StreamingResponse
+    
     with open("uploads/templates/selections_template.xlsx", "rb") as f:
         content = f.read()
     
