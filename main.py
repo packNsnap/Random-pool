@@ -12,6 +12,7 @@ import re
 import csv
 import io
 import asyncio
+import threading
 from contextlib import asynccontextmanager
 from typing import Optional, List
 
@@ -28,15 +29,17 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize DB immediately (lightweight operation)
     init_db()
     
-    # Start scheduler in background thread immediately - file lock prevents duplicates
-    # This doesn't block health checks because it runs in a separate thread
-    asyncio.create_task(asyncio.to_thread(start_scheduler))
+    # Scheduler will start lazily on first dashboard access to avoid blocking deployment health checks
     
     yield
     
     # Shutdown: cleanup if needed
 
 app = FastAPI(title="Random Pool Management", lifespan=lifespan)
+
+# Global flag to track scheduler initialization
+_scheduler_started = False
+_scheduler_lock = threading.Lock()
 
 SESSION_SECRET = os.getenv("SESSION_SECRET")
 if not SESSION_SECRET:
