@@ -40,11 +40,14 @@ Key architectural decisions and features include:
 - 2025-11-17: Deployment Health Check Architecture (Production Ready)
   - **Clean Endpoint Separation**: `/` (health check only, always 200 JSON) and `/dashboard` (authenticated application interface)
   - **Database-Free Health Checks**: Root endpoint never touches database - works even when database is unavailable
-  - **Multi-Worker Scheduler Lock**: File-based fcntl lock ensures only ONE scheduler runs when using `--workers 2` with gunicorn
-  - **Instant Startup**: Scheduler starts immediately in background thread - no 5-second delay, fast health checks
+  - **Lazy Scheduler Initialization**: Scheduler starts on first authenticated dashboard access, not during app startup - prevents blocking health checks
+  - **Multi-Worker Scheduler Lock**: File-based fcntl lock + global flag ensures only ONE scheduler runs when using `--workers 2` with gunicorn
+  - **Instant Startup**: App reports "ready" immediately - no scheduler blocking, no 5-second delay
   - **Bulletproof Health Detection**: Returns 200 for ALL health check scenarios (no headers, Accept */*, Accept text/html, any User-Agent including AWS ELB, Google HC)
   - **Fast Response**: Health checks respond in <3ms without database dependency
+  - **Thread-Safe Pattern**: Double-checked locking for lazy initialization prevents race conditions
   - **Login Flow Update**: After authentication, users redirect to `/dashboard` instead of `/`
+  - **Post-Deploy Note**: Scheduler requires at least one authenticated dashboard visit after deployment to initialize
   - **Deployment Command**: `gunicorn main:app --bind 0.0.0.0:5000 --workers 2 --worker-class uvicorn.workers.UvicornWorker`
   - **Health Check Endpoints**: `GET /` (200 JSON), `HEAD /` (200), `GET /health` (200 JSON with timestamp)
 - 2025-11-17: BAT (Breath Alcohol Testing) Dual-Tracking Feature (Production Ready)
