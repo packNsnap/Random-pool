@@ -1068,6 +1068,7 @@ async def view_roster(
     request: Request,
     client_id: int,
     roster_id: Optional[int] = None,
+    roster_type: str = "roster",
     user: User = Depends(require_login),
     db: Session = Depends(get_db)
 ):
@@ -1078,14 +1079,20 @@ async def view_roster(
     if roster_id:
         roster = db.query(Roster).filter(Roster.id == roster_id).first()
     else:
-        roster = db.query(Roster).filter(Roster.client_id == client_id).order_by(Roster.received_at.desc()).first()
+        roster = db.query(Roster).filter(
+            Roster.client_id == client_id,
+            Roster.roster_type == roster_type
+        ).order_by(Roster.received_at.desc()).first()
     
     if not roster:
+        type_label = "Roster" if roster_type == "roster" else "Selections"
         return templates.TemplateResponse("roster_view.html", {
             "request": request,
             "user": user,
             "client": client,
             "roster": None,
+            "roster_type": roster_type,
+            "type_label": type_label,
             "entries": [],
             "stats": {"total": 0, "tested": 0, "not_tested": 0, "excused": 0}
         })
@@ -1102,11 +1109,15 @@ async def view_roster(
         "excused": excused_count
     }
     
+    type_label = "Roster" if roster.roster_type == "roster" else "Selections"
+    
     return templates.TemplateResponse("roster_view.html", {
         "request": request,
         "user": user,
         "client": client,
         "roster": roster,
+        "roster_type": roster.roster_type,
+        "type_label": type_label,
         "entries": entries,
         "stats": stats
     })
