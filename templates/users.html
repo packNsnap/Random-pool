@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Random Pool Management{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="bi bi-people"></i> User Management</h1>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <i class="bi bi-person-plus"></i> Add User
+            </button>
+        </div>
+    </div>
+</div>
+
+{% if request.query_params.get('error') == 'username_exists' %}
+<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+    <strong>Error!</strong> Username already exists. Please choose a different username.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% elif request.query_params.get('error') == 'cannot_delete_self' %}
+<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+    <strong>Error!</strong> You cannot delete your own account.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Permissions</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in users %}
+                            <tr>
+                                <td>
+                                    <strong>{{ u.username }}</strong>
+                                    {% if u.id == user.id %}
+                                        <span class="badge bg-primary ms-1">You</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ u.full_name or '-' }}</td>
+                                <td>{{ u.email or '-' }}</td>
+                                <td>
+                                    {% if u.role == 'admin' %}
+                                        <span class="badge bg-danger">Admin</span>
+                                    {% else %}
+                                        <span class="badge bg-info">User</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if u.active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>
+                                        {% if u.can_send_emails %}
+                                            <span class="badge bg-primary me-1">Send Emails</span>
+                                        {% endif %}
+                                        {% if u.can_manage_clients %}
+                                            <span class="badge bg-warning me-1">Manage Clients</span>
+                                        {% endif %}
+                                        {% if u.can_view_reports %}
+                                            <span class="badge bg-info me-1">View Reports</span>
+                                        {% endif %}
+                                        {% if not u.can_send_emails and not u.can_manage_clients and not u.can_view_reports %}
+                                            <span class="text-muted">No permissions</span>
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if u.last_login_at %}
+                                        {{ u.last_login_at|format_datetime }}
+                                    {% else %}
+                                        <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editUserModal{{ u.id }}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    {% if u.id != user.id %}
+                                    <form method="post" action="/users/{{ u.id }}/delete" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete user {{ u.username }}? This cannot be undone.')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            <!-- Edit User Modal for each user -->
+                            <div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <form method="post" action="/users/{{ u.id }}/edit">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Edit User: {{ u.username }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Full Name</label>
+                                                        <input type="text" class="form-control" name="full_name" value="{{ u.full_name or '' }}">
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Email</label>
+                                                        <input type="email" class="form-control" name="email" value="{{ u.email or '' }}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Role</label>
+                                                        <select class="form-control" name="role" required>
+                                                            <option value="user" {% if u.role == 'user' %}selected{% endif %}>User</option>
+                                                            <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Password (leave blank to keep current)</label>
+                                                        <input type="password" class="form-control" name="password" placeholder="••••••••">
+                                                    </div>
+                                                </div>
+
+                                                <div class="card border-primary mb-3">
+                                                    <div class="card-header bg-primary text-white">
+                                                        <strong>Status & Permissions</strong>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="form-check form-switch mb-2">
+                                                            <input class="form-check-input" type="checkbox" name="active" id="active{{ u.id }}" {% if u.active %}checked{% endif %}>
+                                                            <label class="form-check-label" for="active{{ u.id }}">
+                                                                <strong>Active</strong> - User can log in
+                                                            </label>
+                                                        </div>
+                                                        <hr>
+                                                        <div class="form-check form-switch mb-2">
+                                                            <input class="form-check-input" type="checkbox" name="can_send_emails" id="email{{ u.id }}" {% if u.can_send_emails %}checked{% endif %}>
+                                                            <label class="form-check-label" for="email{{ u.id }}">
+                                                                <strong>Can Send Emails</strong> - Use quick actions & send emails to clients
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check form-switch mb-2">
+                                                            <input class="form-check-input" type="checkbox" name="can_manage_clients" id="manage{{ u.id }}" {% if u.can_manage_clients %}checked{% endif %}>
+                                                            <label class="form-check-label" for="manage{{ u.id }}">
+                                                                <strong>Can Manage Clients</strong> - Add, edit, delete clients
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input" type="checkbox" name="can_view_reports" id="reports{{ u.id }}" {% if u.can_view_reports %}checked{% endif %}>
+                                                            <label class="form-check-label" for="reports{{ u.id }}">
+                                                                <strong>Can View Reports</strong> - Access reports and analytics
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="/users/add">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="username" required>
+                            <small class="text-muted">Unique username for login</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" name="full_name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Role <span class="text-danger">*</span></label>
+                        <select class="form-control" name="role" required>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <small class="text-muted">Admins have full access to all features</small>
+                    </div>
+
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <strong>User Permissions</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" name="can_send_emails" id="new_email">
+                                <label class="form-check-label" for="new_email">
+                                    <strong>Can Send Emails</strong> - Use quick actions & send emails to clients
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" name="can_manage_clients" id="new_manage">
+                                <label class="form-check-label" for="new_manage">
+                                    <strong>Can Manage Clients</strong> - Add, edit, delete clients
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="can_view_reports" id="new_reports" checked>
+                                <label class="form-check-label" for="new_reports">
+                                    <strong>Can View Reports</strong> - Access reports and analytics
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

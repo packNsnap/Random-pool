@@ -15,7 +15,7 @@ from typing import Optional, List
 
 from database import get_db, init_db
 from models import User, Client, Roster, EmailTemplate, EmailLog, Settings, Attachment, RosterEntry, CCEmail, ClientTemplateSchedule
-from auth import authenticate_user, require_login, get_current_user, hash_password
+from auth import authenticate_user, require_login, get_current_user, hash_password, require_admin
 from email_service import EmailService
 from scheduler import start_scheduler
 from utils import get_current_quarter, format_datetime, days_since, render_template_string
@@ -93,6 +93,98 @@ async def login(request: Request, username: str = Form(...), password: str = For
 async def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/login", status_code=303)
+
+@app.get("/users", response_class=HTMLResponse)
+async def list_users(request: Request, user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    return templates.TemplateResponse("users.html", {
+        "request": request,
+        "user": user,
+        "users": users
+    })
+
+@app.post("/users/add")
+async def add_user(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    email: Optional[str] = Form(None),
+    full_name: Optional[str] = Form(None),
+    role: str = Form("user"),
+    can_send_emails: bool = Form(False),
+    can_manage_clients: bool = Form(False),
+    can_view_reports: bool = Form(True),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    existing_user = db.query(User).filter(User.username == username).first()
+    if existing_user:
+        return RedirectResponse(url="/users?error=username_exists", status_code=303)
+    
+    new_user = User(
+        username=username,
+        password_hash=hash_password(password),
+        email=email,
+        full_name=full_name,
+        role=role,
+        active=True,
+        can_send_emails=can_send_emails,
+        can_manage_clients=can_manage_clients,
+        can_view_reports=can_view_reports
+    )
+    db.add(new_user)
+    db.commit()
+    return RedirectResponse(url="/users", status_code=303)
+
+@app.post("/users/{user_id}/edit")
+async def edit_user(
+    request: Request,
+    user_id: int,
+    email: Optional[str] = Form(None),
+    full_name: Optional[str] = Form(None),
+    role: str = Form("user"),
+    active: bool = Form(False),
+    can_send_emails: bool = Form(False),
+    can_manage_clients: bool = Form(False),
+    can_view_reports: bool = Form(True),
+    password: Optional[str] = Form(None),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    target_user.email = email
+    target_user.full_name = full_name
+    target_user.role = role
+    target_user.active = active
+    target_user.can_send_emails = can_send_emails
+    target_user.can_manage_clients = can_manage_clients
+    target_user.can_view_reports = can_view_reports
+    
+    if password:
+        target_user.password_hash = hash_password(password)
+    
+    db.commit()
+    return RedirectResponse(url="/users", status_code=303)
+
+@app.post("/users/{user_id}/delete")
+async def delete_user(
+    request: Request,
+    user_id: int,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    if user_id == current_user.id:
+        return RedirectResponse(url="/users?error=cannot_delete_self", status_code=303)
+    
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if target_user:
+        db.delete(target_user)
+        db.commit()
+    
+    return RedirectResponse(url="/users", status_code=303)
 
 @app.get("/clients", response_class=HTMLResponse)
 async def list_clients(request: Request, user: User = Depends(require_login), db: Session = Depends(get_db)):
