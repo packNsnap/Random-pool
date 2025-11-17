@@ -15,6 +15,7 @@ The application is built with Python 3.11, utilizing FastAPI for the backend and
 
 Key architectural decisions and features include:
 - **Modular Design**: Separation of concerns with dedicated modules for authentication, database, email, and scheduling.
+- **Role-Based Access Control**: Comprehensive user management with admin and regular user roles, granular permissions (can_send_emails, can_manage_clients, can_view_reports), and secure admin-only quick action enforcement.
 - **Dynamic Content Management**: Ability to create, edit, and delete custom email templates and dynamically generate quick action buttons based on active templates.
 - **Robust Roster Management**: Supports CSV/XLSX uploads and exports for employee rosters with extensive fields (12+ fields including Primary ID, Last Name, First Name, Company, Modality, Location, Division, Supervisor Name, Alternate IDs).
 - **Dual Roster & Selections Management**: Distinct management of "Roster" (reference data) and "Selections" (testing status data) with separate upload and viewing interfaces.
@@ -35,6 +36,16 @@ Key architectural decisions and features include:
 - **SQLAlchemy**: ORM for database interaction.
 
 ## Recent Changes
+- 2025-11-17: User Management & Role-Based Access Control (Production Ready)
+  - **User Roles**: Admin and regular user roles with distinct permissions
+  - **Granular Permissions**: can_send_emails, can_manage_clients, can_view_reports flags for fine-grained access control
+  - **Admin-Only Quick Actions**: All quick action email sends (roster requests, reminders, updates, quarterly selections) restricted to administrators
+  - **User Management UI**: Complete /users interface for admins to add, edit, delete users and toggle permissions
+  - **Enhanced User Model**: Added email, full_name, active status, last_login tracking, and permission fields
+  - **Secure Authentication**: Password hashing with bcrypt, session-based auth, 403 forbidden responses for unauthorized access
+  - **Database Migration**: migrate_user_table.py script to safely add new User fields to existing database
+  - **Defense-in-Depth**: Quick action restrictions enforced at both UI (template) and API (route dependencies) layers
+  - **Navigation Security**: User Management link visible only to admin users in main navigation
 - 2025-11-17: Bulk File Upload with Drag & Drop
   - **Drag & Drop Interface**: New bulk upload modal with intuitive drag-and-drop zone for multiple files
   - **Multiple File Selection**: Upload multiple attachments at once instead of one-by-one
