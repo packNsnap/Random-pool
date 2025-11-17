@@ -72,10 +72,13 @@ async def root_head():
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
-    # Return 200 JSON for non-browser Accept headers (deployment health checks)
+    # Return 200 JSON for non-browser requests (deployment health checks)
     # This allows deployment health checks to pass while keeping browser flow intact
     accept_header = request.headers.get("accept", "")
-    if accept_header and "text/html" not in accept_header:
+    
+    # Health checks may send no Accept header, or Accept: */*, or Accept: application/json
+    # Only redirect for browsers explicitly requesting HTML
+    if not accept_header or ("text/html" not in accept_header):
         return JSONResponse({"status": "ok", "auth": "required"}, status_code=200)
     
     user = get_current_user(request, db)
