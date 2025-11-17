@@ -20,6 +20,7 @@
         </div>
         {% else %}
         
+        {% if roster_type == 'selections' %}
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="card text-white bg-primary">
@@ -63,6 +64,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -92,8 +94,10 @@
                                 <th>Employee ID</th>
                                 <th>Position</th>
                                 <th>Department</th>
+                                {% if roster_type == 'selections' %}
                                 <th>Testing Status</th>
                                 <th>Test Date</th>
+                                {% endif %}
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -104,6 +108,7 @@
                                 <td>{{ entry.employee_id or '-' }}</td>
                                 <td>{{ entry.position or '-' }}</td>
                                 <td>{{ entry.department or '-' }}</td>
+                                {% if roster_type == 'selections' %}
                                 <td>
                                     {% if entry.testing_status == "tested" %}
                                     <span class="badge bg-success">
@@ -120,7 +125,9 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ entry.test_date|format_datetime if entry.test_date else '-' }}</td>
+                                {% endif %}
                                 <td>
+                                    {% if roster_type == 'selections' %}
                                     <form method="post" action="/roster_entries/{{ entry.id }}/toggle_test" style="display: inline;">
                                         {% if entry.testing_status == "not_tested" %}
                                         <button type="submit" class="btn btn-sm btn-outline-success" title="Click to cycle: Not Tested → Tested → Excused">
@@ -136,6 +143,7 @@
                                         </button>
                                         {% endif %}
                                     </form>
+                                    {% endif %}
                                     <form method="post" action="/roster_entries/{{ entry.id }}/delete" style="display: inline;">
                                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove {{ entry.employee_name }} from this roster?')" title="Delete employee">
                                             <i class="bi bi-trash"></i>
