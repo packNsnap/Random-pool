@@ -1494,11 +1494,21 @@ async def view_roster(
     tested_count = sum(1 for e in entries if e.testing_status == "tested")
     excused_count = sum(1 for e in entries if e.testing_status == "excused")
     not_tested_count = sum(1 for e in entries if e.testing_status == "not_tested")
+    
+    bat_required_count = sum(1 for e in entries if e.bat_required)
+    bat_tested_count = sum(1 for e in entries if e.bat_required and e.bat_status == "tested")
+    bat_excused_count = sum(1 for e in entries if e.bat_required and e.bat_status == "excused")
+    bat_not_tested_count = sum(1 for e in entries if e.bat_required and e.bat_status == "not_tested")
+    
     stats = {
         "total": len(entries),
         "tested": tested_count,
         "not_tested": not_tested_count,
-        "excused": excused_count
+        "excused": excused_count,
+        "bat_required": bat_required_count,
+        "bat_tested": bat_tested_count,
+        "bat_not_tested": bat_not_tested_count,
+        "bat_excused": bat_excused_count
     }
     
     type_label = "Roster" if roster.roster_type == "roster" else "Selections"
@@ -1552,6 +1562,50 @@ async def toggle_test_status(
     
     entry.testing_status = status_cycle.get(entry.testing_status, "not_tested")
     entry.test_date = datetime.utcnow() if entry.testing_status == "tested" else None
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{entry.client_id}/roster?roster_id={entry.roster_id}", status_code=303)
+
+@app.post("/roster_entries/{entry_id}/toggle_bat")
+async def toggle_bat_requirement(
+    entry_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    entry = db.query(RosterEntry).filter(RosterEntry.id == entry_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    
+    entry.bat_required = not entry.bat_required
+    if not entry.bat_required:
+        entry.bat_status = "not_tested"
+        entry.bat_test_date = None
+    
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{entry.client_id}/roster?roster_id={entry.roster_id}", status_code=303)
+
+@app.post("/roster_entries/{entry_id}/cycle_bat_status")
+async def cycle_bat_status(
+    entry_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    entry = db.query(RosterEntry).filter(RosterEntry.id == entry_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    
+    if not entry.bat_required:
+        raise HTTPException(status_code=400, detail="BAT testing not required for this entry")
+    
+    status_cycle = {
+        "not_tested": "tested",
+        "tested": "excused",
+        "excused": "not_tested"
+    }
+    
+    entry.bat_status = status_cycle.get(entry.bat_status, "not_tested")
+    entry.bat_test_date = datetime.utcnow() if entry.bat_status == "tested" else None
     db.commit()
     
     return RedirectResponse(url=f"/clients/{entry.client_id}/roster?roster_id={entry.roster_id}", status_code=303)

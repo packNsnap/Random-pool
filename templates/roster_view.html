@@ -21,11 +21,16 @@
         {% else %}
         
         {% if roster_type == 'selections' %}
+        <div class="row mb-3">
+            <div class="col-12">
+                <h5><i class="bi bi-capsule"></i> Drug Testing Stats</h5>
+            </div>
+        </div>
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="card text-white bg-primary">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-people"></i> Total</h5>
+                        <h5 class="card-title"><i class="bi bi-people"></i> Total Employees</h5>
                         <h2>{{ stats.total }}</h2>
                     </div>
                 </div>
@@ -64,6 +69,57 @@
                 </div>
             </div>
         </div>
+        
+        {% if stats.bat_required > 0 %}
+        <div class="row mb-3">
+            <div class="col-12">
+                <h5><i class="bi bi-droplet-fill"></i> BAT (Breath Alcohol) Testing Stats</h5>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-droplet"></i> BAT Required</h5>
+                        <h2>{{ stats.bat_required }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-check-circle"></i> Tested</h5>
+                        <h2>{{ stats.bat_tested }}</h2>
+                        {% if stats.bat_required > 0 %}
+                        <small>{{ (stats.bat_tested / stats.bat_required * 100)|round(1) }}%</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-hourglass-split"></i> Not Tested</h5>
+                        <h2>{{ stats.bat_not_tested }}</h2>
+                        {% if stats.bat_required > 0 %}
+                        <small>{{ (stats.bat_not_tested / stats.bat_required * 100)|round(1) }}%</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-shield-check"></i> Excused</h5>
+                        <h2>{{ stats.bat_excused }}</h2>
+                        {% if stats.bat_required > 0 %}
+                        <small>{{ (stats.bat_excused / stats.bat_required * 100)|round(1) }}%</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         {% endif %}
 
         <div class="card">
@@ -95,7 +151,8 @@
                                 <th>Position</th>
                                 <th>Department</th>
                                 {% if roster_type == 'selections' %}
-                                <th>Testing Status</th>
+                                <th>Drug Test Status</th>
+                                <th>BAT Status</th>
                                 <th>Test Date</th>
                                 {% endif %}
                                 <th>Actions</th>
@@ -124,27 +181,92 @@
                                     </span>
                                     {% endif %}
                                 </td>
-                                <td>{{ entry.test_date|format_datetime if entry.test_date else '-' }}</td>
+                                <td>
+                                    {% if entry.bat_required %}
+                                        {% if entry.bat_status == "tested" %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Tested
+                                        </span>
+                                        {% elif entry.bat_status == "excused" %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-shield-check"></i> Excused
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-hourglass-split"></i> Not Tested
+                                        </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-dash-circle"></i> Not Required
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="small">
+                                        {% if entry.test_date %}
+                                        <strong>Drug:</strong> {{ entry.test_date|format_datetime }}<br>
+                                        {% endif %}
+                                        {% if entry.bat_required and entry.bat_test_date %}
+                                        <strong>BAT:</strong> {{ entry.bat_test_date|format_datetime }}
+                                        {% endif %}
+                                        {% if not entry.test_date and not (entry.bat_required and entry.bat_test_date) %}
+                                        -
+                                        {% endif %}
+                                    </div>
+                                </td>
                                 {% endif %}
                                 <td>
                                     {% if roster_type == 'selections' %}
-                                    <form method="post" action="/roster_entries/{{ entry.id }}/toggle_test" style="display: inline;">
-                                        {% if entry.testing_status == "not_tested" %}
-                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Click to cycle: Not Tested → Tested → Excused">
-                                            <i class="bi bi-arrow-repeat"></i>
-                                        </button>
-                                        {% elif entry.testing_status == "tested" %}
-                                        <button type="submit" class="btn btn-sm btn-outline-info" title="Click to cycle: Tested → Excused → Not Tested">
-                                            <i class="bi bi-arrow-repeat"></i>
-                                        </button>
-                                        {% else %}
-                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Click to cycle: Excused → Not Tested → Tested">
-                                            <i class="bi bi-arrow-repeat"></i>
-                                        </button>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <form method="post" action="/roster_entries/{{ entry.id }}/toggle_test" style="display: inline;">
+                                            {% if entry.testing_status == "not_tested" %}
+                                            <button type="submit" class="btn btn-outline-success" title="Cycle Drug Test: Not Tested → Tested → Excused">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                            {% elif entry.testing_status == "tested" %}
+                                            <button type="submit" class="btn btn-outline-info" title="Cycle Drug Test: Tested → Excused → Not Tested">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                            {% else %}
+                                            <button type="submit" class="btn btn-outline-warning" title="Cycle Drug Test: Excused → Not Tested → Tested">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                            {% endif %}
+                                        </form>
+                                        
+                                        <form method="post" action="/roster_entries/{{ entry.id }}/toggle_bat" style="display: inline;">
+                                            {% if entry.bat_required %}
+                                            <button type="submit" class="btn btn-primary" title="BAT Required - Click to disable">
+                                                <i class="bi bi-droplet-fill"></i>
+                                            </button>
+                                            {% else %}
+                                            <button type="submit" class="btn btn-outline-secondary" title="BAT Not Required - Click to enable">
+                                                <i class="bi bi-droplet"></i>
+                                            </button>
+                                            {% endif %}
+                                        </form>
+                                        
+                                        {% if entry.bat_required %}
+                                        <form method="post" action="/roster_entries/{{ entry.id }}/cycle_bat_status" style="display: inline;">
+                                            {% if entry.bat_status == "not_tested" %}
+                                            <button type="submit" class="btn btn-outline-success" title="Cycle BAT: Not Tested → Tested → Excused">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                            {% elif entry.bat_status == "tested" %}
+                                            <button type="submit" class="btn btn-outline-info" title="Cycle BAT: Tested → Excused → Not Tested">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                            {% else %}
+                                            <button type="submit" class="btn btn-outline-warning" title="Cycle BAT: Excused → Not Tested → Tested">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                            {% endif %}
+                                        </form>
                                         {% endif %}
-                                    </form>
+                                    </div>
                                     {% endif %}
-                                    <form method="post" action="/roster_entries/{{ entry.id }}/delete" style="display: inline;">
+                                    <form method="post" action="/roster_entries/{{ entry.id }}/delete" style="display: inline;" class="ms-2">
                                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove {{ entry.employee_name }} from this roster?')" title="Delete employee">
                                             <i class="bi bi-trash"></i>
                                         </button>

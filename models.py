@@ -96,6 +96,12 @@ class RosterEntry(Base):
     # Testing status
     testing_status = Column(String, default="not_tested", nullable=False)
     test_date = Column(DateTime, nullable=True)
+    
+    # BAT (Breath Alcohol Testing) status
+    bat_required = Column(Boolean, default=False, nullable=False)
+    bat_status = Column(String, default="not_tested", nullable=False)
+    bat_test_date = Column(DateTime, nullable=True)
+    
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
