@@ -375,7 +375,7 @@ async def update_automation_settings(
 @app.post("/clients/{client_id}/send_roster_request")
 async def send_roster_request(
     client_id: int,
-    user: User = Depends(require_login),
+    user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     client = db.query(Client).filter(Client.id == client_id).first()
@@ -414,7 +414,7 @@ async def send_roster_request(
 @app.post("/clients/{client_id}/send_reminder")
 async def send_reminder(
     client_id: int,
-    user: User = Depends(require_login),
+    user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     client = db.query(Client).filter(Client.id == client_id).first()
@@ -454,7 +454,7 @@ async def send_reminder(
 @app.post("/clients/{client_id}/send_update")
 async def send_update(
     client_id: int,
-    user: User = Depends(require_login),
+    user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     client = db.query(Client).filter(Client.id == client_id).first()
@@ -492,7 +492,7 @@ async def send_update(
 async def send_template_email(
     client_id: int,
     template_id: int,
-    user: User = Depends(require_login),
+    user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     client = db.query(Client).filter(Client.id == client_id).first()

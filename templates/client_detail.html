@@ -72,12 +72,12 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Quick Actions</h5>
-                {% if user.role != 'admin' and not user.can_send_emails %}
-                <small class="text-muted"><i class="bi bi-lock"></i> Admin or permission required</small>
+                {% if user.role != 'admin' %}
+                <small class="text-muted"><i class="bi bi-lock"></i> Admin access required</small>
                 {% endif %}
             </div>
             <div class="card-body">
-                {% if user.role == 'admin' or user.can_send_emails %}
+                {% if user.role == 'admin' %}
                 {% for template in active_templates %}
                 <form method="post" action="/clients/{{ client.id }}/send_email/{{ template.id }}" class="mb-2">
                     <button type="submit" class="btn 
@@ -101,7 +101,7 @@
                 {% endfor %}
                 {% else %}
                 <div class="alert alert-warning mb-0">
-                    <i class="bi bi-shield-lock"></i> You don't have permission to send emails. Contact an administrator to request access.
+                    <i class="bi bi-shield-lock"></i> Only administrators can send quick action emails. Contact an administrator if you need access.
                 </div>
                 {% endif %}
                 
