@@ -257,7 +257,7 @@
                 <h5 class="mb-0">Roster Management</h5>
                 <div>
                     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadRosterCSVModal">
-                        <i class="bi bi-file-earmark-arrow-up"></i> Upload CSV
+                        <i class="bi bi-file-earmark-arrow-up"></i> Upload Roster
                     </button>
                     <a href="/clients/{{ client.id }}/roster" class="btn btn-sm btn-success">
                         <i class="bi bi-list-check"></i> View Roster
@@ -300,7 +300,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted">No rosters uploaded yet. Click "Upload CSV" to import employee roster data.</p>
+                <p class="text-muted">No rosters uploaded yet. Click "Upload Roster" to import employee roster data (CSV or XLSX).</p>
                 {% endif %}
             </div>
         </div>
@@ -424,13 +424,12 @@
         <div class="modal-content">
             <form method="post" action="/clients/{{ client.id }}/upload_roster_csv" enctype="multipart/form-data">
                 <div class="modal-header">
-                    <h5 class="modal-title">Upload Roster CSV</h5>
+                    <h5 class="modal-title">Upload Roster (CSV or XLSX)</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info">
-                        <strong>CSV Format:</strong> Your CSV should include columns like:<br>
-                        <code>employee_name</code>, <code>employee_id</code>, <code>position</code>, <code>department</code>
+                        <strong>Supported Fields:</strong> Primary ID, Last Name, First Name, Company, Modality, Location, Division, Supervisor Name, Alternate Id, Alternate Id Type, Alternate Id 2, Alternate Id 2 Type, Employee Name, Employee ID, Position, Department
                     </div>
                     <div class="mb-3">
                         <label for="csv_quarter" class="form-label">Quarter</label>
@@ -438,8 +437,8 @@
                                value="{{ current_quarter }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="csv_file" class="form-label">CSV File</label>
-                        <input type="file" class="form-control" id="csv_file" name="file" accept=".csv" required>
+                        <label for="csv_file" class="form-label">Roster File (CSV or XLSX)</label>
+                        <input type="file" class="form-control" id="csv_file" name="file" accept=".csv,.xlsx,.xls" required>
                     </div>
                 </div>
                 <div class="modal-footer">
