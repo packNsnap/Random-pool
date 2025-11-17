@@ -85,6 +85,15 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse(url="/login", status_code=303)
     
+    # Lazy scheduler initialization on first authenticated access
+    global _scheduler_started
+    if not _scheduler_started:
+        with _scheduler_lock:
+            if not _scheduler_started:
+                # Start scheduler in background thread - file lock prevents duplicates
+                threading.Thread(target=start_scheduler, daemon=True).start()
+                _scheduler_started = True
+    
     clients = db.query(Client).filter(Client.active == True).all()
     current_quarter = get_current_quarter()
     
