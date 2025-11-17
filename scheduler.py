@@ -8,9 +8,14 @@ from utils import get_current_quarter, get_quarter_dates, days_since
 import logging
 import os
 import csv
+import fcntl
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Global scheduler instance
+_scheduler_instance = None
+_lock_file = None
 
 def get_roster_template_by_type(db: Session, template_type: str):
     return db.query(EmailTemplate).filter(
@@ -363,6 +368,24 @@ def send_weekly_testing_reports():
         db.close()
 
 def start_scheduler():
+    """Start scheduler only if this worker acquired the lock (prevents duplicates with multiple workers)"""
+    global _scheduler_instance, _lock_file
+    
+    # If scheduler already started in this process, return it
+    if _scheduler_instance is not None:
+        return _scheduler_instance
+    
+    # Try to acquire exclusive lock - only one worker will succeed
+    lock_path = "/tmp/scheduler.lock"
+    try:
+        _lock_file = open(lock_path, 'w')
+        fcntl.flock(_lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        logger.info("Acquired scheduler lock - starting scheduler in this worker")
+    except IOError:
+        logger.info("Another worker already has scheduler lock - skipping scheduler start")
+        return None
+    
+    # This worker acquired the lock - start the scheduler
     scheduler = BackgroundScheduler(timezone="UTC")
     
     scheduler.add_job(
@@ -399,6 +422,7 @@ def start_scheduler():
     )
     
     scheduler.start()
+    _scheduler_instance = scheduler
     logger.info("Scheduler started successfully")
     
     return scheduler

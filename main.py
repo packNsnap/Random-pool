@@ -25,15 +25,12 @@ from utils import get_current_quarter, format_datetime, days_since, render_templ
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events"""
-    # Startup: Initialize DB and defer scheduler startup
+    # Startup: Initialize DB immediately (lightweight operation)
     init_db()
     
-    # Start scheduler in background thread to prevent blocking event loop
-    async def delayed_scheduler_start():
-        await asyncio.sleep(5)
-        await asyncio.to_thread(start_scheduler)
-    
-    asyncio.create_task(delayed_scheduler_start())
+    # Start scheduler in background thread immediately - file lock prevents duplicates
+    # This doesn't block health checks because it runs in a separate thread
+    asyncio.create_task(asyncio.to_thread(start_scheduler))
     
     yield
     
@@ -70,17 +67,17 @@ async def root_head():
     """Fast health check for HEAD requests"""
     return Response(status_code=200, headers={"Content-Type": "application/json"})
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
+async def root():
+    """
+    Health check endpoint - always returns 200 JSON for deployment verification.
+    Browsers should navigate to /dashboard for the application interface.
+    """
+    return JSONResponse({"status": "ok", "ready": True, "message": "Navigate to /dashboard to login"}, status_code=200)
+
+@app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
-    # Return 200 JSON for non-browser requests (deployment health checks)
-    # This allows deployment health checks to pass while keeping browser flow intact
-    accept_header = request.headers.get("accept", "")
-    
-    # Health checks may send no Accept header, or Accept: */*, or Accept: application/json
-    # Only redirect for browsers explicitly requesting HTML
-    if not accept_header or ("text/html" not in accept_header):
-        return JSONResponse({"status": "ok", "auth": "required"}, status_code=200)
-    
+    # Dashboard requires authentication
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
@@ -195,7 +192,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
         "urgent_actions": urgent_actions,
         "warning_actions": warning_actions,
         "recent_activity": recent_activity,
-        "upcoming_schedules": upcoming_schedules[:5],
+        "upcoming_schedules": upcoming_schedules,
         "total_tested": total_tested,
         "total_employees": total_employees
     })
@@ -214,7 +211,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
         })
     
     request.session["user_id"] = user.id
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/dashboard", status_code=303)
 
 @app.get("/logout")
 async def logout(request: Request):
