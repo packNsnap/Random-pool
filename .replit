@@ -43,5 +43,5 @@ channel = "stable-25_05"
 packages = ["cargo", "libiconv", "rustc"]
 
 [deployment]
-deploymentTarget = "vm"
-run = ["gunicorn", "main:app", "--workers", "2", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:5000"]
+deploymentTarget = "cloudrun"
+run = ["sh", "-c", "/nix/store/cn7gx98bvd6qj3jrh5v21q868nlv2jv6-python3-wrapper/bin/python3 $file"]
