@@ -20,6 +20,7 @@ Key architectural decisions and features include:
 - **Robust Roster Management**: Supports CSV/XLSX uploads and exports for employee rosters with extensive fields (12+ fields including Primary ID, Last Name, First Name, Company, Modality, Location, Division, Supervisor Name, Alternate IDs).
 - **Dual Roster & Selections Management**: Distinct management of "Roster" (reference data) and "Selections" (testing status data) with separate upload and viewing interfaces.
 - **Three-State Testing Status**: Tracks employees as tested, not tested, or excused, with status cycling functionality.
+- **BAT Dual-Tracking**: Independent tracking of Drug Testing and BAT (Breath Alcohol Testing) for employees in selections, with per-employee BAT requirement toggle and separate status management.
 - **Automated Communication**: Scheduled email delivery for roster requests, reminders, progress updates, weekly testing reports, and quarterly selections.
 - **Configurable Reminders**: Per-client reminder preferences with custom frequencies (daily, weekly, biweekly, monthly, custom days).
 - **Attachment Management**: Client-specific attachment uploads categorized for different email types (roster requests, reminders, updates, quarterly selections), with automated inclusion in emails.
@@ -36,6 +37,16 @@ Key architectural decisions and features include:
 - **SQLAlchemy**: ORM for database interaction.
 
 ## Recent Changes
+- 2025-11-17: BAT (Breath Alcohol Testing) Dual-Tracking Feature (Production Ready)
+  - **Per-Employee BAT Toggle**: One-click button to enable/disable BAT requirement for individual employees in selections
+  - **Independent Status Management**: Separate drug and BAT status cycling (not_tested → tested → excused → not_tested)
+  - **Dual Status Display**: Separate columns showing drug test status and BAT status with color-coded badges
+  - **Separate Test Dates**: Independent tracking of drug test date and BAT test date timestamps
+  - **BAT-Specific Stats**: When BAT is required, displays separate stat cards showing BAT completion rates (tested/not tested/excused)
+  - **Visual Indicators**: Droplet icon (💧) for BAT toggle button, clear tooltips for all actions
+  - **Database Fields**: Added bat_required (boolean), bat_status (string), bat_test_date (datetime) to RosterEntry model
+  - **Migration Script**: migrate_bat_fields.py for safe database schema updates
+  - **DOT Compliance Ready**: Aligns with DOT MIS form requirements for separate drug and alcohol testing reporting
 - 2025-11-17: Dashboard Overhaul - Executive Command Center (Production Ready)
   - **KPI Metrics Cards**: 4 modern cards showing Active Clients, Pending Rosters, Testing Completion %, and Overdue Items
   - **Smart Action Items**: Urgent (red, 21+ days) and Warning (yellow, 14-21 days or <50% testing) alerts with inline client links
