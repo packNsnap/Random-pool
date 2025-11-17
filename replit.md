@@ -89,6 +89,12 @@ The system supports both Gmail and Outlook/Office 365:
 - `{{report_date}}` - Report generation date
 
 ## Recent Changes
+- 2025-11-17: Email Attachment Data Source Routing
+  - **Roster-Type Emails**: Quarterly roster updates and roster submission follow-ups now auto-generate CSV attachments from Roster data (roster_type='roster')
+  - **Selection-Type Emails**: Biweekly progress updates and weekly testing reports now auto-generate CSV attachments from Selections data (roster_type='selections')
+  - **Smart CSV Generation**: Each email type automatically includes the appropriate CSV with correct column headers (roster CSVs include employee demographics, selections CSVs include testing status)
+  - **Quarterly Selections**: Continue to use uploaded attachments from the quarterly_selections category only
+  - **Automated Cleanup**: Temporary CSV files are automatically deleted after email sending
 - 2025-11-17: Simplified Roster View (Reference-Only Mode)
   - **Roster Section**: Now displays employee lists without testing tracking - clean reference data only
   - **Selections Section**: Contains all testing status features (tested/not tested/excused, stats cards, progress tracking)
