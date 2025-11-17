@@ -37,6 +37,11 @@ Key architectural decisions and features include:
 - **SQLAlchemy**: ORM for database interaction.
 
 ## Recent Changes
+- 2025-11-17: Quarterly Selections Template Type Fix (Production Ready)
+  - **Added Missing Template Type**: Added "Quarterly Selections" option to template type dropdown
+  - **Attachment Matching**: Templates now properly match attachments - "Quarterly Selections" template type pulls attachments with "quarterly_selections" category
+  - **User Action Required**: Existing quarterly templates must be edited to change type from "Roster Request" to "Quarterly Selections"
+  - **Files Updated**: templates/template_form.html (line 30)
 - 2025-11-17: Navigation Fix - Dashboard Header Links (Production Ready)
   - **Fixed Header Navigation**: Updated navbar brand and Dashboard menu link to point to `/dashboard` instead of `/` (health check endpoint)
   - **Correct Routing**: Application interface is at `/dashboard`, health checks at `/` return JSON only

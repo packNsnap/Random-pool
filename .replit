@@ -31,12 +31,12 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 33815
-externalPort = 3002
-
-[[ports]]
 localPort = 36569
 externalPort = 3000
+
+[[ports]]
+localPort = 38819
+externalPort = 3001
 
 [nix]
 channel = "stable-25_05"
