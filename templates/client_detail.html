@@ -218,9 +218,14 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Quarterly Mailing Attachments</h5>
-                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadAttachmentModal">
-                    <i class="bi bi-plus-circle"></i> Add Attachment
-                </button>
+                <div>
+                    <button type="button" class="btn btn-sm btn-success me-2" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
+                        <i class="bi bi-cloud-upload"></i> Bulk Upload
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadAttachmentModal">
+                        <i class="bi bi-plus-circle"></i> Add Attachment
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 {% if client.attachments %}
@@ -545,6 +550,316 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="bulkUploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bulk Upload Attachments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="bulk_category" class="form-label">Email Type</label>
+                    <select class="form-control" id="bulk_category" required>
+                        <option value="roster_request">Roster Request</option>
+                        <option value="reminder">Email Reminder</option>
+                        <option value="update">Roster Update</option>
+                        <option value="quarterly_selections" selected>Quarterly Selections</option>
+                    </select>
+                    <small class="text-muted">All files will be assigned to this email type.</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="bulk_description" class="form-label">Description (Optional)</label>
+                    <input type="text" class="form-control" id="bulk_description" placeholder="e.g., Q1 2025 Documents">
+                    <small class="text-muted">Same description will be applied to all files.</small>
+                </div>
+
+                <div id="drop-area" class="mb-3">
+                    <div class="upload-icon">📁</div>
+                    <p class="mb-2"><strong>Drag & Drop files here</strong></p>
+                    <p class="text-muted mb-3">or</p>
+                    <input type="file" id="bulk-file-input" multiple hidden>
+                    <button type="button" class="btn btn-primary" id="browse-btn">
+                        <i class="bi bi-folder2-open"></i> Browse Files
+                    </button>
+                    <p class="text-muted mt-2 mb-0"><small>Upload multiple files (Max 3MB each)</small></p>
+                </div>
+
+                <div id="bulk-file-list" class="mb-3"></div>
+
+                <button type="button" class="btn btn-success w-100" id="upload-bulk-btn" style="display: none;">
+                    <i class="bi bi-cloud-upload"></i> Upload All Files
+                </button>
+
+                <div class="progress mt-3" id="bulk-progress-wrapper" style="display: none;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         id="bulk-progress-bar" 
+                         role="progressbar" 
+                         style="width: 0%">
+                        0%
+                    </div>
+                </div>
+
+                <div id="bulk-upload-status" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #drop-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 0.375rem;
+        padding: 40px;
+        text-align: center;
+        background-color: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    #drop-area.highlight {
+        border-color: #198754;
+        background-color: #d1e7dd;
+    }
+    
+    #drop-area:hover {
+        border-color: #198754;
+    }
+    
+    .file-list-item {
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .remove-btn {
+        cursor: pointer;
+        color: #dc3545;
+        font-size: 1.5rem;
+        line-height: 1;
+    }
+    
+    .remove-btn:hover {
+        color: #bb2d3b;
+    }
+    
+    .upload-icon {
+        font-size: 3rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropArea = document.getElementById('drop-area');
+    const fileInput = document.getElementById('bulk-file-input');
+    const browseBtn = document.getElementById('browse-btn');
+    const fileList = document.getElementById('bulk-file-list');
+    const uploadBtn = document.getElementById('upload-bulk-btn');
+    const progressWrapper = document.getElementById('bulk-progress-wrapper');
+    const progressBar = document.getElementById('bulk-progress-bar');
+    const uploadStatus = document.getElementById('bulk-upload-status');
+    const categorySelect = document.getElementById('bulk_category');
+    const descriptionInput = document.getElementById('bulk_description');
+    
+    let selectedFiles = [];
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight(e) {
+        dropArea.classList.add('highlight');
+    }
+    
+    function unhighlight(e) {
+        dropArea.classList.remove('highlight');
+    }
+    
+    dropArea.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+    
+    browseBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+    
+    function handleFiles(files) {
+        files = [...files];
+        files.forEach(file => {
+            if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                selectedFiles.push(file);
+            }
+        });
+        updateFileList();
+    }
+    
+    function updateFileList() {
+        fileList.innerHTML = '';
+        
+        if (selectedFiles.length === 0) {
+            uploadBtn.style.display = 'none';
+            return;
+        }
+        
+        uploadBtn.style.display = 'block';
+        
+        selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-list-item';
+            fileItem.innerHTML = `
+                <div>
+                    <strong>${file.name}</strong>
+                    <small class="text-muted d-block">${formatFileSize(file.size)}</small>
+                </div>
+                <span class="remove-btn" onclick="removeBulkFile(${index})">&times;</span>
+            `;
+            fileList.appendChild(fileItem);
+        });
+    }
+    
+    window.removeBulkFile = function(index) {
+        selectedFiles.splice(index, 1);
+        updateFileList();
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    uploadBtn.addEventListener('click', uploadFiles);
+    
+    function uploadFiles() {
+        if (selectedFiles.length === 0) return;
+        
+        const formData = new FormData();
+        selectedFiles.forEach((file) => {
+            formData.append('files', file);
+        });
+        formData.append('category', categorySelect.value);
+        formData.append('description', descriptionInput.value);
+        
+        progressWrapper.style.display = 'block';
+        uploadBtn.disabled = true;
+        uploadStatus.innerHTML = '';
+        
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                const percentComplete = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = percentComplete + '%';
+                progressBar.textContent = percentComplete + '%';
+            }
+        });
+        
+        xhr.addEventListener('load', () => {
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                
+                if (response.success) {
+                    uploadStatus.innerHTML = `
+                        <div class="alert alert-success" role="alert">
+                            <i class="bi bi-check-circle"></i> ${response.count} file(s) uploaded successfully!
+                        </div>
+                    `;
+                    selectedFiles = [];
+                    updateFileList();
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    let errorHtml = `
+                        <div class="alert alert-warning" role="alert">
+                            <strong>Uploaded ${response.count} file(s)</strong><br>
+                    `;
+                    if (response.errors.length > 0) {
+                        errorHtml += '<strong>Errors:</strong><ul>';
+                        response.errors.forEach(error => {
+                            errorHtml += `<li>${error}</li>`;
+                        });
+                        errorHtml += '</ul>';
+                    }
+                    errorHtml += '</div>';
+                    uploadStatus.innerHTML = errorHtml;
+                }
+            } else {
+                uploadStatus.innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-x-circle"></i> Upload failed. Please try again.
+                    </div>
+                `;
+            }
+            uploadBtn.disabled = false;
+            setTimeout(() => {
+                progressWrapper.style.display = 'none';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+            }, 2000);
+        });
+        
+        xhr.addEventListener('error', () => {
+            uploadStatus.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-x-circle"></i> Network error occurred.
+                </div>
+            `;
+            uploadBtn.disabled = false;
+            progressWrapper.style.display = 'none';
+        });
+        
+        xhr.open('POST', '/clients/{{ client.id }}/bulk_attachments', true);
+        xhr.send(formData);
+    }
+    
+    const bulkUploadModal = document.getElementById('bulkUploadModal');
+    bulkUploadModal.addEventListener('hidden.bs.modal', function () {
+        selectedFiles = [];
+        updateFileList();
+        uploadStatus.innerHTML = '';
+        progressWrapper.style.display = 'none';
+        progressBar.style.width = '0%';
+        progressBar.textContent = '0%';
+    });
+});
+</script>
 
 <div class="modal fade" id="uploadRosterModal" tabindex="-1">
     <div class="modal-dialog">

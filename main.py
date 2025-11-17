@@ -11,7 +11,7 @@ import uuid
 import re
 import csv
 import io
-from typing import Optional
+from typing import Optional, List
 
 from database import get_db, init_db
 from models import User, Client, Roster, EmailTemplate, EmailLog, Settings, Attachment, RosterEntry, CCEmail, ClientTemplateSchedule
@@ -1014,6 +1014,71 @@ async def upload_attachment(
     db.commit()
     
     return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
+@app.post("/clients/{client_id}/bulk_attachments")
+async def upload_bulk_attachments(
+    client_id: int,
+    files: List[UploadFile] = File(...),
+    category: str = Form("quarterly_selections"),
+    description: Optional[str] = Form(None),
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    from fastapi.responses import JSONResponse
+    
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    uploaded_files = []
+    errors = []
+    
+    for file in files:
+        try:
+            if not file.filename:
+                errors.append(f"File has no name")
+                continue
+            
+            original_filename = os.path.basename(file.filename)
+            sanitized_filename = re.sub(r'[^a-zA-Z0-9._-]', '_', original_filename)
+            
+            content = await file.read()
+            file_size = len(content)
+            
+            if file_size > 3 * 1024 * 1024:
+                errors.append(f"{original_filename}: File exceeds 3MB limit")
+                continue
+            
+            unique_id = str(uuid.uuid4())
+            extension = os.path.splitext(sanitized_filename)[1]
+            stored_filename = f"{client_id}_{unique_id}{extension}"
+            file_path = os.path.join("uploads", "attachments", stored_filename)
+            
+            with open(file_path, "wb") as buffer:
+                buffer.write(content)
+            
+            attachment = Attachment(
+                client_id=client_id,
+                filename=stored_filename,
+                original_filename=original_filename,
+                file_size=file_size,
+                category=category,
+                description=description
+            )
+            db.add(attachment)
+            uploaded_files.append(original_filename)
+            
+        except Exception as e:
+            errors.append(f"{file.filename}: {str(e)}")
+    
+    db.commit()
+    
+    return JSONResponse(content={
+        "success": len(errors) == 0,
+        "uploaded": uploaded_files,
+        "errors": errors,
+        "count": len(uploaded_files)
+    })
 
 @app.get("/attachments/{attachment_id}/download")
 async def download_attachment(

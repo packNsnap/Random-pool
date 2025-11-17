@@ -33,3 +33,20 @@ Key architectural decisions and features include:
 - **SMTP (Gmail/Outlook)**: Email sending service.
 - **APScheduler**: Python library for scheduling background jobs.
 - **SQLAlchemy**: ORM for database interaction.
+
+## Recent Changes
+- 2025-11-17: Bulk File Upload with Drag & Drop
+  - **Drag & Drop Interface**: New bulk upload modal with intuitive drag-and-drop zone for multiple files
+  - **Multiple File Selection**: Upload multiple attachments at once instead of one-by-one
+  - **Visual Feedback**: Real-time file preview with size display and remove buttons before uploading
+  - **Progress Tracking**: Animated progress bar shows upload status for bulk operations
+  - **Smart Defaults**: Pre-selects "Quarterly Selections" category for quick quarterly mailing uploads
+  - **Error Handling**: Comprehensive error messages for individual file failures with detailed feedback
+  - **Auto-Refresh**: Page automatically reloads after successful bulk upload to show new attachments
+  - **File Validation**: Individual 3MB file size validation with clear error messages
+  - **Bulk Upload Button**: New green "Bulk Upload" button in Quarterly Mailing Attachments section
+- 2025-11-17: Scheduler Integration with Automation Settings
+  - **Full Scheduler Integration**: All scheduler functions now use ClientTemplateSchedule settings
+  - **Auto-Bootstrap Schedules**: System automatically creates default ClientTemplateSchedule entries when none exist
+  - **Helper Functions**: Centralized should_send_email() and mark_email_sent() functions handle all interval logic
+  - **Production Ready**: Scheduler respects per-client, per-template automation settings with flexible intervals
