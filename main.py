@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import shutil
 import uuid
@@ -66,7 +66,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     
     client_data = []
     for client in clients:
-        roster_received = any(r.quarter == current_quarter for r in client.rosters)
+        roster_received = any(r.quarter == current_quarter and r.roster_type == "roster" for r in client.rosters)
         days_last_contact = days_since(client.last_roster_request_at)
         
         if not roster_received:
@@ -136,7 +136,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     recent_activity = db.query(EmailLog).order_by(EmailLog.sent_at.desc()).limit(10).all()
     
     upcoming_schedules = []
-    for client in clients[:5]:
+    for client in clients:
         schedules = db.query(ClientTemplateSchedule).filter(
             ClientTemplateSchedule.client_id == client.id,
             ClientTemplateSchedule.enabled == True
@@ -146,6 +146,9 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
                 "client": client,
                 "schedule": schedule
             })
+    
+    upcoming_schedules.sort(key=lambda x: (x["schedule"].last_sent_at or datetime.min, x["client"].name))
+    upcoming_schedules = upcoming_schedules[:5]
     
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
