@@ -2,11 +2,12 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, date, timedelta
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import Client, EmailTemplate, Roster, RosterEntry
+from models import Client, EmailTemplate, Roster, RosterEntry, ClientTemplateSchedule
 from email_service import EmailService
 from utils import get_current_quarter, get_quarter_dates, days_since
 import logging
 import os
+import csv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,6 +17,66 @@ def get_roster_template_by_type(db: Session, template_type: str):
         EmailTemplate.template_type == template_type,
         EmailTemplate.active == True
     ).first()
+
+def should_send_email(db: Session, client_id: int, template_type: str) -> bool:
+    schedule = db.query(ClientTemplateSchedule).filter(
+        ClientTemplateSchedule.client_id == client_id,
+        ClientTemplateSchedule.template_type == template_type
+    ).first()
+    
+    # Auto-create default schedule if it doesn't exist
+    if not schedule:
+        default_intervals = {
+            "roster_request": ("weekly", 1),  # Monday
+            "follow_up": ("weekly", 1),
+            "progress_update": ("biweekly", 1),
+            "testing_report": ("weekly", 1),
+            "quarterly_selections": ("monthly", None)
+        }
+        interval_type, interval_value = default_intervals.get(template_type, ("weekly", 1))
+        
+        schedule = ClientTemplateSchedule(
+            client_id=client_id,
+            template_type=template_type,
+            enabled=True,
+            interval_type=interval_type,
+            interval_value=interval_value
+        )
+        db.add(schedule)
+        db.commit()
+        db.refresh(schedule)
+    
+    if not schedule.enabled:
+        return False
+    
+    if not schedule.last_sent_at:
+        return True
+    
+    days_since_last = (datetime.utcnow() - schedule.last_sent_at).days
+    current_day_of_week = datetime.utcnow().weekday() + 1
+    
+    if schedule.interval_type == "daily":
+        return days_since_last >= 1
+    elif schedule.interval_type == "weekly":
+        return days_since_last >= 7 and current_day_of_week == schedule.interval_value
+    elif schedule.interval_type == "biweekly":
+        return days_since_last >= 14 and current_day_of_week == schedule.interval_value
+    elif schedule.interval_type == "monthly":
+        return days_since_last >= 30
+    elif schedule.interval_type == "custom_days":
+        return days_since_last >= (schedule.interval_value or 7)
+    
+    return False
+
+def mark_email_sent(db: Session, client_id: int, template_type: str):
+    schedule = db.query(ClientTemplateSchedule).filter(
+        ClientTemplateSchedule.client_id == client_id,
+        ClientTemplateSchedule.template_type == template_type
+    ).first()
+    
+    if schedule:
+        schedule.last_sent_at = datetime.utcnow()
+        db.commit()
 
 def check_and_send_roster_reminders():
     db = SessionLocal()
@@ -39,6 +100,9 @@ def check_and_send_roster_reminders():
         ).all()
         
         for client in active_clients:
+            if not should_send_email(db, client.id, "roster_request"):
+                continue
+            
             if client.roster_frequency != "quarterly":
                 continue
             
@@ -52,11 +116,6 @@ def check_and_send_roster_reminders():
                     break
             
             if roster_received_this_quarter:
-                continue
-            
-            days_since_last_request = days_since(client.last_roster_request_at) if client.last_roster_request_at else 999
-            
-            if days_since_last_request < 7:
                 continue
             
             template = get_roster_template_by_type(db, "roster_request")
@@ -83,7 +142,7 @@ def check_and_send_roster_reminders():
             if success:
                 client.last_roster_request_at = datetime.utcnow()
                 client.status = "Roster Request Sent"
-                db.commit()
+                mark_email_sent(db, client.id, "roster_request")
                 logger.info(f"Sent roster reminder to {client.name}")
             else:
                 logger.error(f"Failed to send roster reminder to {client.name}: {message}")
@@ -104,6 +163,9 @@ def check_and_send_follow_ups():
         active_clients = db.query(Client).filter(Client.active == True).all()
         
         for client in active_clients:
+            if not should_send_email(db, client.id, "follow_up"):
+                continue
+                
             roster_received_this_quarter = False
             for roster in client.rosters:
                 if roster.quarter == current_quarter:
@@ -142,7 +204,7 @@ def check_and_send_follow_ups():
             if success:
                 client.last_roster_request_at = datetime.utcnow()
                 client.status = "Follow-up Sent"
-                db.commit()
+                mark_email_sent(db, client.id, "follow_up")
                 logger.info(f"Sent follow-up to {client.name}")
             else:
                 logger.error(f"Failed to send follow-up to {client.name}: {message}")
@@ -161,9 +223,7 @@ def check_and_send_progress_updates():
         active_clients = db.query(Client).filter(Client.active == True).all()
         
         for client in active_clients:
-            days_since_last_update = days_since(client.last_progress_update_at) if client.last_progress_update_at else 999
-            
-            if days_since_last_update < client.progress_frequency_days:
+            if not should_send_email(db, client.id, "progress_update"):
                 continue
             
             template = get_roster_template_by_type(db, "progress_update")
@@ -185,7 +245,7 @@ def check_and_send_progress_updates():
             
             if success:
                 client.last_progress_update_at = datetime.utcnow()
-                db.commit()
+                mark_email_sent(db, client.id, "progress_update")
                 logger.info(f"Sent progress update to {client.name}")
             else:
                 logger.error(f"Failed to send progress update to {client.name}: {message}")
@@ -207,6 +267,9 @@ def send_weekly_testing_reports():
         ).all()
         
         for client in active_clients:
+            if not should_send_email(db, client.id, "testing_report"):
+                continue
+                
             latest_roster = db.query(Roster).filter(
                 Roster.client_id == client.id,
                 Roster.roster_type == "selections"
@@ -289,6 +352,7 @@ def send_weekly_testing_reports():
                 os.remove(csv_path)
             
             if success:
+                mark_email_sent(db, client.id, "testing_report")
                 logger.info(f"Sent weekly testing report to {client.name}")
             else:
                 logger.error(f"Failed to send testing report to {client.name}: {message}")

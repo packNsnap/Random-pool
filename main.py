@@ -14,7 +14,7 @@ import io
 from typing import Optional
 
 from database import get_db, init_db
-from models import User, Client, Roster, EmailTemplate, EmailLog, Settings, Attachment, RosterEntry, CCEmail
+from models import User, Client, Roster, EmailTemplate, EmailLog, Settings, Attachment, RosterEntry, CCEmail, ClientTemplateSchedule
 from auth import authenticate_user, require_login, get_current_user, hash_password
 from email_service import EmailService
 from scheduler import start_scheduler
@@ -162,6 +162,10 @@ async def client_detail(
     email_logs = db.query(EmailLog).filter(EmailLog.client_id == client_id).order_by(EmailLog.sent_at.desc()).limit(10).all()
     active_templates = db.query(EmailTemplate).filter(EmailTemplate.active == True).all()
     
+    template_schedules_dict = {}
+    for schedule in client.template_schedules:
+        template_schedules_dict[schedule.template_type] = schedule
+    
     return templates.TemplateResponse("client_detail.html", {
         "request": request,
         "user": user,
@@ -170,7 +174,8 @@ async def client_detail(
         "selections": selections,
         "email_logs": email_logs,
         "current_quarter": get_current_quarter(),
-        "active_templates": active_templates
+        "active_templates": active_templates,
+        "template_schedules": template_schedules_dict
     })
 
 @app.get("/clients/{client_id}/edit", response_class=HTMLResponse)
@@ -223,6 +228,54 @@ async def update_client(
     client.testing_report_day_of_week = testing_report_day_of_week
     client.active = active == "true"
     client.notes = notes
+    db.commit()
+    
+    return RedirectResponse(url=f"/clients/{client_id}", status_code=303)
+
+@app.post("/clients/{client_id}/update_automation_settings")
+async def update_automation_settings(
+    request: Request,
+    client_id: int,
+    user: User = Depends(require_login),
+    db: Session = Depends(get_db)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    form_data = await request.form()
+    
+    active_templates = db.query(EmailTemplate).filter(EmailTemplate.active == True).all()
+    
+    for template in active_templates:
+        template_type = template.template_type
+        enabled_key = f"{template_type}_enabled"
+        interval_type_key = f"{template_type}_interval_type"
+        interval_value_key = f"{template_type}_interval_value"
+        
+        enabled = form_data.get(enabled_key) == "true"
+        interval_type = form_data.get(interval_type_key, "weekly")
+        interval_value = form_data.get(interval_value_key)
+        
+        schedule = db.query(ClientTemplateSchedule).filter(
+            ClientTemplateSchedule.client_id == client_id,
+            ClientTemplateSchedule.template_type == template_type
+        ).first()
+        
+        if schedule:
+            schedule.enabled = enabled
+            schedule.interval_type = interval_type
+            schedule.interval_value = int(interval_value) if interval_value and interval_value.isdigit() else None
+        else:
+            schedule = ClientTemplateSchedule(
+                client_id=client_id,
+                template_type=template_type,
+                enabled=enabled,
+                interval_type=interval_type,
+                interval_value=int(interval_value) if interval_value and interval_value.isdigit() else None
+            )
+            db.add(schedule)
+    
     db.commit()
     
     return RedirectResponse(url=f"/clients/{client_id}", status_code=303)

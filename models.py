@@ -41,6 +41,7 @@ class Client(Base):
     email_logs = relationship("EmailLog", back_populates="client", cascade="all, delete-orphan")
     attachments = relationship("Attachment", back_populates="client", cascade="all, delete-orphan")
     cc_emails = relationship("CCEmail", back_populates="client", cascade="all, delete-orphan")
+    template_schedules = relationship("ClientTemplateSchedule", cascade="all, delete-orphan")
 
 class Roster(Base):
     __tablename__ = "rosters"
@@ -156,3 +157,18 @@ class CCEmail(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     client = relationship("Client", back_populates="cc_emails")
+
+class ClientTemplateSchedule(Base):
+    __tablename__ = "client_template_schedules"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
+    template_type = Column(String, nullable=False)
+    enabled = Column(Boolean, default=True)
+    interval_type = Column(String, default="weekly", nullable=False)
+    interval_value = Column(Integer, nullable=True)
+    last_sent_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    client = relationship("Client", overlaps="template_schedules")

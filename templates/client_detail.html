@@ -144,6 +144,78 @@
 <div class="row mt-3">
     <div class="col-md-12">
         <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Automation Settings</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="/clients/{{ client.id }}/update_automation_settings">
+                    <div class="row">
+                        {% for template in active_templates %}
+                        {% set schedule = template_schedules.get(template.template_type) %}
+                        <div class="col-md-6 mb-3">
+                            <div class="border rounded p-3">
+                                <h6 class="mb-3">{{ template.name }}</h6>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               id="{{ template.template_type }}_enabled" 
+                                               name="{{ template.template_type }}_enabled" 
+                                               value="true"
+                                               {% if not schedule or schedule.enabled %}checked{% endif %}>
+                                        <label class="form-check-label" for="{{ template.template_type }}_enabled">
+                                            Enable Automated Sending
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="{{ template.template_type }}_interval_type" class="form-label">Frequency</label>
+                                        <select class="form-select" id="{{ template.template_type }}_interval_type" 
+                                                name="{{ template.template_type }}_interval_type">
+                                            <option value="daily" {% if schedule and schedule.interval_type == 'daily' %}selected{% endif %}>Daily</option>
+                                            <option value="weekly" {% if not schedule or schedule.interval_type == 'weekly' %}selected{% endif %}>Weekly</option>
+                                            <option value="biweekly" {% if schedule and schedule.interval_type == 'biweekly' %}selected{% endif %}>Biweekly (Every 2 weeks)</option>
+                                            <option value="monthly" {% if schedule and schedule.interval_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                                            <option value="custom_days" {% if schedule and schedule.interval_type == 'custom_days' %}selected{% endif %}>Custom (Days)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="{{ template.template_type }}_interval_value" class="form-label">Value</label>
+                                        <select class="form-select" id="{{ template.template_type }}_interval_value" 
+                                                name="{{ template.template_type }}_interval_value">
+                                            <option value="1" {% if schedule and schedule.interval_value == 1 %}selected{% endif %}>Monday</option>
+                                            <option value="2" {% if schedule and schedule.interval_value == 2 %}selected{% endif %}>Tuesday</option>
+                                            <option value="3" {% if schedule and schedule.interval_value == 3 %}selected{% endif %}>Wednesday</option>
+                                            <option value="4" {% if schedule and schedule.interval_value == 4 %}selected{% endif %}>Thursday</option>
+                                            <option value="5" {% if schedule and schedule.interval_value == 5 %}selected{% endif %}>Friday</option>
+                                            <option value="7" {% if schedule and schedule.interval_value == 7 %}selected{% endif %}>7 days</option>
+                                            <option value="14" {% if schedule and schedule.interval_value == 14 %}selected{% endif %}>14 days</option>
+                                            <option value="30" {% if schedule and schedule.interval_value == 30 %}selected{% endif %}>30 days</option>
+                                        </select>
+                                        <small class="text-muted">Day of week (for weekly) or days (for custom)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Save Automation Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Quarterly Mailing Attachments</h5>
                 <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadAttachmentModal">
