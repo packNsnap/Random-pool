@@ -43,6 +43,8 @@ _scheduler_lock = threading.Lock()
 
 SESSION_SECRET = os.getenv("SESSION_SECRET")
 if not SESSION_SECRET:
+    import sys
+    print("FATAL: SESSION_SECRET environment variable is not set. Add it in Railway → Variables.", file=sys.stderr, flush=True)
     raise RuntimeError("SESSION_SECRET environment variable must be set")
 
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
