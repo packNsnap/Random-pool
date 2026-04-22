@@ -11,3 +11,4 @@ python-dotenv==1.0.0
 itsdangerous==2.1.2
 openpyxl
 starlette
+psycopg2-binary
