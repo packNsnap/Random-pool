@@ -49,7 +49,7 @@ class EmailConfig:
     
     def configure_outlook(self, username: str, password: str, from_email: str):
         self.save_setting("email_provider", "outlook")
-        self.save_setting("smtp_host", "smtp-mail.outlook.com")
+        self.save_setting("smtp_host", "smtp.office365.com")
         self.save_setting("smtp_port", "587")
         self.save_setting("smtp_username", username)
         self.save_setting("smtp_password", password)

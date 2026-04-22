@@ -107,11 +107,13 @@
                     <li>Use the App Password as password</li>
                 </ol>
                 
-                <h6 class="mt-3">Outlook Setup:</h6>
+                <h6 class="mt-3">GoDaddy / Office 365 Setup:</h6>
                 <ol>
-                    <li>Use your Outlook email address as username</li>
-                    <li>Use your account password</li>
-                    <li>May require enabling SMTP in account settings</li>
+                    <li>Sign in to <strong>Microsoft 365 Admin Center</strong> (admin.microsoft.com)</li>
+                    <li>Go to Users → Active Users → select your user → Mail tab</li>
+                    <li>Click <strong>Manage email apps</strong> and check <strong>Authenticated SMTP</strong>, then Save</li>
+                    <li>If MFA is on, generate an <strong>App Password</strong> at account.microsoft.com → Security → Advanced security → App passwords</li>
+                    <li>Use your full email address as username and your password (or App Password) here</li>
                 </ol>
             </div>
         </div>
@@ -129,7 +131,7 @@ function updateProviderInfo() {
     if (provider === 'gmail') {
         infoDiv.innerHTML = '<strong>Gmail:</strong> You may need to use an App Password instead of your regular password. <a href="https://support.google.com/accounts/answer/185833" target="_blank">Learn more</a>';
     } else if (provider === 'outlook') {
-        infoDiv.innerHTML = '<strong>Outlook:</strong> Use your regular account password. Make sure SMTP is enabled in your account settings.';
+        infoDiv.innerHTML = '<strong>GoDaddy / Office 365:</strong> Authenticated SMTP must be enabled in Microsoft 365 Admin Center (Users → Active Users → Mail → Manage email apps). If MFA is on, use an App Password instead of your regular password.';
     }
 }
 </script>
